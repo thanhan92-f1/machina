@@ -19,8 +19,9 @@ import {
   VmDeleteUndefineOpts, BlockJobInfo,
   tuneVmDisk, tuneVmNic, setVmFirmware, attachVmTpm, detachVmTpm,
   attachVmWatchdog, attachVmSound, attachVmSerial, setVmVideoModel,
-  addShare, removeShare,
+  addShare, removeShare, FLUXVM_CONNECTION, isFluxvmConnection,
 } from '../api/vm'
+import SerialConsole from '../components/SerialConsole'
 import { listPlatformVms, getConsoleHubPlan, listVmPortForwards, listPlatformHosts, type VmPortForwardRule, type PlatformVm, type PlatformHost } from '../api/platform'
 import { getVmDoctor, type VmDoctorReport } from '../api/ai'
 import {
@@ -114,7 +115,7 @@ function SnapshotTableRows({
   )
 }
 
-const VM_DETAIL_TABS = ['overview', 'disks', 'network', 'snapshots', 'devices', 'guest-policy', 'xml', 'logs', 'advanced'] as const
+const VM_DETAIL_TABS = ['overview', 'disks', 'network', 'snapshots', 'devices', 'guest-policy', 'xml', 'logs', 'advanced', 'serial'] as const
 type Tab = (typeof VM_DETAIL_TABS)[number]
 type Dialog = null | 'cdrom' | 'clone' | 'rename' | 'migrate' | 'snapshot' | 'boot-order' | 'vcpus' | 'memory' | 'balloon' | 'attach-disk' | 'resize-disk' | 'attach-nic' | 'attach-usb' | 'save-template' | 'linux-ssh-key' | 'linux-password' | 'linux-hostname'
   | 'delete-vm' | 'scheduler-tune' | 'memtune' | 'numa-tune' | 'emulator-pin' | 'pin-vcpu' | 'block-commit'
@@ -163,6 +164,7 @@ export default function VMDetailsPage() {
     () => searchParams.get('connection') ?? vm?.libvirt_connection ?? undefined,
     [searchParams, vm?.libvirt_connection],
   )
+  const isFluxvm = isFluxvmConnection(conn) || vm?.backend === FLUXVM_CONNECTION
 
   useEffect(() => {
     if (!vm?.libvirt_connection || vm.libvirt_connection === 'system') return
@@ -320,11 +322,22 @@ export default function VMDetailsPage() {
     const alive = () => seq === loadSeq.current
     try {
       setLoadError(null)
-      const [vmData, snapData] = await Promise.all([getVM(name, conn), listSnapshots(name, conn).catch(() => [])])
+      const [vmData, snapData] = await Promise.all([
+        getVM(name, conn),
+        isFluxvmConnection(conn) ? Promise.resolve([]) : listSnapshots(name, conn).catch(() => []),
+      ])
       if (!alive()) return
       setVM(vmData)
       setSnapshots(snapData)
       addRecentVM(name)
+      if (vmData.backend === FLUXVM_CONNECTION) {
+        if (vmData.state === 'running') {
+          await getVMMetrics(name, conn).then((m) => { if (alive()) setMetrics(m) }, () => { /* no metrics */ })
+        } else if (alive()) {
+          setMetrics(null)
+        }
+        return
+      }
       // These calls are independent of each other (all keyed only on name/conn) — fire
       // them concurrently instead of one-at-a-time, which used to serialize ~10 round
       // trips (several seconds apiece with guest-agent probes) into an 8s+ page load.
@@ -1292,7 +1305,7 @@ export default function VMDetailsPage() {
     )
   }
 
-  const tabs: { key: Tab; label: string }[] = [
+  const allTabs: { key: Tab; label: string }[] = [
     { key: 'overview', label: 'Overview' },
     { key: 'disks', label: `Disks (${vm.disks.length})` },
     { key: 'network', label: `Network (${vm.interfaces.length})` },
@@ -1303,6 +1316,9 @@ export default function VMDetailsPage() {
     { key: 'logs', label: 'Logs' },
     { key: 'advanced', label: 'Advanced' },
   ]
+  const tabs = isFluxvm
+    ? [...allTabs.filter((t) => t.key === 'overview' || t.key === 'disks' || t.key === 'network'), { key: 'serial' as Tab, label: 'Serial console' }]
+    : allTabs
 
   return (
     <PageLayout hideHeader title={vm.name}>
@@ -1317,6 +1333,11 @@ export default function VMDetailsPage() {
             {vm.libvirt_connection === 'session' && (
               <span className={sessionBadgeClasses('text-xs')} title="Domain on qemu:///session">
                 session
+              </span>
+            )}
+            {isFluxvm && (
+              <span className={`px-2 py-0.5 rounded text-xs font-medium ${statusBadgeClasses('info')}`} title="Managed by fluxvm-api">
+                FluxVM{vm.fluxvm_backend ? ` · ${vm.fluxvm_backend}` : ''}
               </span>
             )}
             <span className="text-sm text-[var(--text-muted)] font-mono">{vm.uuid}</span>
@@ -1340,8 +1361,8 @@ export default function VMDetailsPage() {
         </div>
         <div className="flex items-center gap-2 flex-wrap justify-end">
           <Link to={vmConsoleRoute(vm.name, conn)} className="btn-secondary text-sm inline-flex items-center gap-1"><Terminal className="w-4 h-4" /> Console</Link>
-          <RdpConsoleLink vmName={vm.name} connection={conn} />
-          <ClassicVmSpiceToVncButton
+          {!isFluxvm && <RdpConsoleLink vmName={vm.name} connection={conn} />}
+          {!isFluxvm && <ClassicVmSpiceToVncButton
             vmName={vm.name}
             connection={conn}
             platformVmId={platformVmId}
@@ -1352,7 +1373,7 @@ export default function VMDetailsPage() {
               setVmXml('')
             }}
             onError={(msg) => toast.error(msg)}
-          />
+          />}
           <button type="button" onClick={openVmSshDialog} className="btn-secondary text-sm inline-flex items-center gap-1">
             <Terminal className="w-4 h-4" /> SSH
           </button>
@@ -1363,7 +1384,7 @@ export default function VMDetailsPage() {
               <button onClick={() => action(rebootVM, 'Reboot')} className="btn-primary text-sm inline-flex items-center gap-1"><RotateCcw className="w-4 h-4" /> Reboot</button>
               <button onClick={() => action(stopVM, 'Force Stop')} className="btn-destructive text-sm inline-flex items-center gap-1"><Square className="w-4 h-4" /> Stop</button>
               <button onClick={() => action(pauseVM, 'Pause')} className="px-3 py-1.5 bg-[var(--apple-fill-secondary)] hover:bg-[var(--surface-hover)] rounded-lg text-sm transition flex items-center gap-1"><Pause className="w-4 h-4" /> Pause</button>
-              <button onClick={() => action(managedSave, 'Managed Save')} className="btn-secondary text-sm inline-flex items-center gap-1"><Save className="w-4 h-4" /> Save</button>
+              {!isFluxvm && <button onClick={() => action(managedSave, 'Managed Save')} className="btn-secondary text-sm inline-flex items-center gap-1"><Save className="w-4 h-4" /> Save</button>}
             </>
           )}
           {vm.state === 'paused' && <button onClick={() => action(resumeVM, 'Resume')} className="btn-primary text-sm inline-flex items-center gap-1"><RefreshCw className="w-4 h-4" /> Resume</button>}
@@ -1373,6 +1394,11 @@ export default function VMDetailsPage() {
       </div>
 
       {/* Settings Bar */}
+      {isFluxvm ? (
+        <p className="text-xs text-[var(--text-muted)]">
+          FluxVM guest — lifecycle, metrics and serial console only. Snapshots, hotplug, XML and tuning are libvirt features.
+        </p>
+      ) : (
       <div className="flex items-center gap-2 flex-wrap">
         <span className="text-xs text-[var(--text-muted)] mr-1"><Settings className="w-3.5 h-3.5 inline -mt-0.5" /> Settings:</span>
         <button onClick={() => openDialog('vcpus')} className="btn-ghost text-xs"><Cpu className="w-3 h-3 inline -mt-0.5" /> vCPUs</button>
@@ -1388,7 +1414,9 @@ export default function VMDetailsPage() {
         <button type="button" onClick={() => setTab('advanced')} className="btn-ghost text-xs"><Sliders className="w-3 h-3 inline -mt-0.5" /> Advanced</button>
         <button onClick={load} className="btn-ghost text-xs" aria-label="Refresh"><RefreshCw className="w-3 h-3" /></button>
       </div>
+      )}
 
+      {!isFluxvm && (<>
       <VmConsoleHeroPreview
         vmName={vm.name}
         vmState={vm.state}
@@ -1426,6 +1454,7 @@ export default function VMDetailsPage() {
         }}
         onNotify={(m) => toast.success(m)}
       />
+      </>)}
 
       {/* Chapter sections — text tabs, not ChoiceCard boxes */}
       <div className="apple-section apple-section--tight px-0 border-t border-[var(--apple-hairline)]">
@@ -2592,6 +2621,12 @@ export default function VMDetailsPage() {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {tab === 'serial' && isFluxvm && (
+        <div className="apple-section apple-section--tight px-0 flex flex-col min-h-[28rem]">
+          <SerialConsole vmName={vm.name} libvirtConnection={FLUXVM_CONNECTION} />
         </div>
       )}
 

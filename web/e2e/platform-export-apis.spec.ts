@@ -75,15 +75,6 @@ test('SOC playbooks reload from API', async ({ page }) => {
   await expect(page.getByText('Reloaded notify_on_critical')).toBeVisible({ timeout: 10_000 })
 })
 
-test('migration hypersdk POST proxy', async ({ page }) => {
-  await mockPlatformApi(page, { tier: 'advanced' })
-  await page.goto('/platform/migration')
-  await expect(page.getByText('HyperSDK is connected')).toBeVisible({ timeout: 20_000 })
-  await expect(page.getByText('HyperSDK proxy explorer')).toBeVisible({ timeout: 10_000 })
-  await page.getByTestId('hypersdk-proxy-post').click()
-  await expect(page.getByText('POST proxy OK')).toBeVisible({ timeout: 10_000 })
-})
-
 test('disk images kubevirt POST bundle rebuild', async ({ page }) => {
   await mockPlatformApi(page, { tier: 'power' })
   await page.goto('/disk-images')

@@ -229,7 +229,7 @@ Manual steps (optional)
 
 Checklist: PREREQUISITES.txt  |  Details: HOST_SETUP.txt
 
-Packaged by Zyvor — zyvor.dev · HyperSDK · © 2026
+Packaged by Zyvor — zyvor.dev · © 2026
 QEOF
 
 cp "\${BUILD_DIR}/scripts/zyvor-branding/ZYVOR_INSTALL.txt" "\${STAGE}/ZYVOR_INSTALL.txt" 2>/dev/null || true

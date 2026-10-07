@@ -1,0 +1,217 @@
+// Copyright 2026 Zyvor AI Labs · https://zyvor.dev
+// SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0
+
+import { useState } from 'react'
+import { createVMWithProgress, type CreateVmRequest } from '../../api/vm'
+import { formatUserError } from '../../utils/apiError'
+
+export const FLUXVM_HYPERVISORS = ['auto', 'qemu', 'cloud-hypervisor', 'firecracker', 'flux-vm'] as const
+
+/** Every mode but `user`/`none` gives the guest a tap, which FluxVM's eBPF VM edge attaches to. */
+export const FLUXVM_NETWORKS = [
+  { id: 'netns', label: 'eBPF namespace (default)', hint: 'Tap in its own network namespace with DHCP + NAT; eBPF VM edge attached' },
+  { id: 'bridge', label: 'eBPF on a host bridge', hint: 'Tap on an existing host bridge; eBPF VM edge attached' },
+  { id: 'direct', label: 'eBPF direct uplink', hint: 'No bridge: TC/eBPF redirect between a host NIC and the tap' },
+  { id: 'user', label: 'User-mode NAT (QEMU only)', hint: 'No tap, so no eBPF policy or accounting' },
+  { id: 'none', label: 'No network', hint: '' },
+] as const
+export type FluxvmNetwork = (typeof FLUXVM_NETWORKS)[number]['id']
+
+type Props = {
+  initialName?: string
+  defaultHypervisor?: string
+  onCreated: (name: string) => void
+  onError: (message: string) => void
+}
+
+/** Build the daemon create request for a FluxVM guest (`backend: 'fluxvm'`). */
+export function buildFluxvmCreateRequest(p: {
+  name: string
+  vcpus: number
+  memoryMb: number
+  diskGb: number
+  hypervisor: string
+  image: string
+  network?: FluxvmNetwork
+  bridge?: string
+  directUplink?: string
+  directMode?: string
+  directGuestIps?: string
+  cloudInitUser?: string
+  cloudInitSshKey?: string
+}): CreateVmRequest {
+  const network = p.network ?? 'netns'
+  const net: Partial<CreateVmRequest> =
+    network === 'bridge'
+      ? { fluxvm_bridge: p.bridge?.trim() || undefined }
+      : network === 'direct'
+        ? {
+            fluxvm_direct_uplink: p.directUplink?.trim() || undefined,
+            fluxvm_direct_mode: p.directMode?.trim() || undefined,
+            fluxvm_direct_guest_ips: (p.directGuestIps ?? '').split(/[\s,]+/).filter(Boolean),
+          }
+        : { fluxvm_network: network }
+  return {
+    name: p.name.trim(),
+    vcpus: p.vcpus,
+    memory_mb: p.memoryMb,
+    disk_gb: p.diskGb,
+    backend: 'fluxvm',
+    fluxvm_backend: p.hypervisor,
+    fluxvm_image: p.image.trim(),
+    ...net,
+    cloud_init_user: p.cloudInitUser?.trim() || undefined,
+    cloud_init_ssh_pubkey: p.cloudInitSshKey?.trim() || undefined,
+  }
+}
+
+export default function FluxvmCreatePanel({ initialName = '', defaultHypervisor, onCreated, onError }: Props) {
+  const initial = FLUXVM_HYPERVISORS.find((h) => h === defaultHypervisor) ?? 'auto'
+  const [vmName, setVmName] = useState(initialName)
+  const [vcpus, setVcpus] = useState(2)
+  const [memoryMb, setMemoryMb] = useState(2048)
+  const [diskGb, setDiskGb] = useState(20)
+  const [cloudInitUser, setCloudInitUser] = useState('')
+  const [cloudInitSshKey, setCloudInitSshKey] = useState('')
+  const [hypervisor, setHypervisor] = useState<string>(initial)
+  const [image, setImage] = useState('')
+  const [network, setNetwork] = useState<FluxvmNetwork>('netns')
+  const [bridge, setBridge] = useState('')
+  const [directUplink, setDirectUplink] = useState('')
+  const [directMode, setDirectMode] = useState('l2-uplink')
+  const [directGuestIps, setDirectGuestIps] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  const [log, setLog] = useState<string[]>([])
+
+  const blocked = !vmName.trim()
+    ? 'Enter a VM name first.'
+    : !image.trim()
+      ? 'Enter the base image path on the FluxVM host.'
+      : network === 'bridge' && !bridge.trim()
+        ? 'Enter the host bridge.'
+        : network === 'direct' && !directUplink.trim()
+          ? 'Enter the host uplink NIC.'
+          : network === 'user' && hypervisor !== 'qemu' && hypervisor !== 'auto'
+            ? 'User-mode NAT needs the qemu (or auto) hypervisor.'
+            : null
+
+  const submit = async () => {
+    if (blocked) return
+    const req = buildFluxvmCreateRequest({
+      name: vmName, vcpus, memoryMb, diskGb, hypervisor, image,
+      network, bridge, directUplink, directMode, directGuestIps,
+      cloudInitUser, cloudInitSshKey,
+    })
+    setSubmitting(true)
+    setLog([])
+    try {
+      await createVMWithProgress(req, (line) => setLog((prev) => [...prev, line]))
+      onCreated(req.name)
+    } catch (e: unknown) {
+      onError(formatUserError(e))
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <div className="bg-[var(--apple-surface)] rounded-xl p-5 border border-[var(--apple-hairline)] space-y-4" data-testid="fluxvm-create-panel">
+      <div>
+        <h3 className="text-sm font-semibold text-[var(--text-primary)]">FluxVM guest</h3>
+        <p className="text-xs text-[var(--text-muted)]">
+          Created through fluxvm-api instead of libvirt. Lifecycle, metrics and the serial console work from Machina; snapshots and hotplug stay libvirt-only.
+        </p>
+      </div>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="sm:col-span-2">
+          <label htmlFor="fluxvm-name" className="block text-sm text-[var(--text-muted)] mb-1">Name *</label>
+          <input id="fluxvm-name" type="text" value={vmName} onChange={(e) => setVmName(e.target.value)} className="input-field w-full text-sm" placeholder="my-microvm" />
+        </div>
+        <div>
+          <label htmlFor="fluxvm-vcpus" className="block text-sm text-[var(--text-muted)] mb-1">vCPUs</label>
+          <input id="fluxvm-vcpus" type="number" min={1} max={255} value={vcpus} onChange={(e) => setVcpus(Math.max(1, Number(e.target.value) || 1))} className="input-field w-full text-sm" />
+        </div>
+        <div>
+          <label htmlFor="fluxvm-memory" className="block text-sm text-[var(--text-muted)] mb-1">Memory (MiB)</label>
+          <input id="fluxvm-memory" type="number" min={128} step={128} value={memoryMb} onChange={(e) => setMemoryMb(Math.max(128, Number(e.target.value) || 128))} className="input-field w-full text-sm" />
+        </div>
+        <div>
+          <label htmlFor="fluxvm-disk" className="block text-sm text-[var(--text-muted)] mb-1">Disk (GiB, 0 = image size)</label>
+          <input id="fluxvm-disk" type="number" min={0} value={diskGb} onChange={(e) => setDiskGb(Math.max(0, Number(e.target.value) || 0))} className="input-field w-full text-sm" />
+        </div>
+        <div>
+          <label htmlFor="fluxvm-hypervisor" className="block text-sm text-[var(--text-muted)] mb-1">Hypervisor</label>
+          <select id="fluxvm-hypervisor" value={hypervisor} onChange={(e) => setHypervisor(e.target.value)} className="input-field w-full text-sm">
+            {FLUXVM_HYPERVISORS.map((h) => (
+              <option key={h} value={h}>{h}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label htmlFor="fluxvm-network" className="block text-sm text-[var(--text-muted)] mb-1">Network</label>
+          <select id="fluxvm-network" value={network} onChange={(e) => setNetwork(e.target.value as FluxvmNetwork)} className="input-field w-full text-sm">
+            {FLUXVM_NETWORKS.map((n) => (
+              <option key={n.id} value={n.id}>{n.label}</option>
+            ))}
+          </select>
+          <p className="text-xs text-[var(--text-muted)] mt-1">{FLUXVM_NETWORKS.find((n) => n.id === network)?.hint}</p>
+        </div>
+        {network === 'bridge' && (
+          <div className="sm:col-span-2">
+            <label htmlFor="fluxvm-bridge" className="block text-sm text-[var(--text-muted)] mb-1">Host bridge *</label>
+            <input id="fluxvm-bridge" type="text" value={bridge} onChange={(e) => setBridge(e.target.value)} className="input-field w-full font-mono text-sm" placeholder="br0" />
+          </div>
+        )}
+        {network === 'direct' && (
+          <>
+            <div>
+              <label htmlFor="fluxvm-uplink" className="block text-sm text-[var(--text-muted)] mb-1">Host uplink NIC *</label>
+              <input id="fluxvm-uplink" type="text" value={directUplink} onChange={(e) => setDirectUplink(e.target.value)} className="input-field w-full font-mono text-sm" placeholder="eno1" />
+            </div>
+            <div>
+              <label htmlFor="fluxvm-direct-mode" className="block text-sm text-[var(--text-muted)] mb-1">Redirect mode</label>
+              <select id="fluxvm-direct-mode" value={directMode} onChange={(e) => setDirectMode(e.target.value)} className="input-field w-full text-sm">
+                <option value="l2-uplink">l2-uplink (physical / bond NIC)</option>
+                <option value="peer-veth">peer-veth (CNI pod eth0)</option>
+              </select>
+            </div>
+            {directMode === 'l2-uplink' && (
+              <div className="sm:col-span-2">
+                <label htmlFor="fluxvm-guest-ips" className="block text-sm text-[var(--text-muted)] mb-1">Guest IPv4s for ARP steering (optional, up to 8)</label>
+                <input id="fluxvm-guest-ips" type="text" value={directGuestIps} onChange={(e) => setDirectGuestIps(e.target.value)} className="input-field w-full font-mono text-sm" placeholder="192.0.2.10, 192.0.2.11" />
+              </div>
+            )}
+          </>
+        )}
+        <div className="sm:col-span-2">
+          <label htmlFor="fluxvm-image" className="block text-sm text-[var(--text-muted)] mb-1">Base image on the FluxVM host *</label>
+          <input
+            id="fluxvm-image"
+            type="text"
+            value={image}
+            onChange={(e) => setImage(e.target.value)}
+            className="input-field w-full font-mono text-sm"
+            placeholder="/var/lib/fluxvm/images/ubuntu-24.04.qcow2"
+          />
+        </div>
+        <div>
+          <label htmlFor="fluxvm-ci-user" className="block text-sm text-[var(--text-muted)] mb-1">Cloud-init user (optional)</label>
+          <input id="fluxvm-ci-user" type="text" value={cloudInitUser} onChange={(e) => setCloudInitUser(e.target.value)} className="input-field w-full text-sm" placeholder="ubuntu" />
+        </div>
+        <div>
+          <label htmlFor="fluxvm-ci-key" className="block text-sm text-[var(--text-muted)] mb-1">SSH public key (optional)</label>
+          <input id="fluxvm-ci-key" type="text" value={cloudInitSshKey} onChange={(e) => setCloudInitSshKey(e.target.value)} className="input-field w-full font-mono text-sm" placeholder="ssh-ed25519 AAAA…" />
+        </div>
+      </div>
+      {log.length > 0 && (
+        <pre className="text-xs font-mono text-[var(--text-secondary)] bg-[var(--surface-hover)] rounded-lg p-3 max-h-40 overflow-auto">{log.join('\n')}</pre>
+      )}
+      <div className="flex items-center gap-3 flex-wrap">
+        <button type="button" onClick={submit} disabled={submitting || !!blocked} className="btn-primary text-sm disabled:opacity-50 px-8 py-3">
+          {submitting ? 'Creating…' : 'Create FluxVM guest'}
+        </button>
+        {blocked && <span className="text-xs text-[var(--text-muted)]">{blocked}</span>}
+      </div>
+    </div>
+  )
+}

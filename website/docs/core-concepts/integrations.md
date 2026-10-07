@@ -41,7 +41,7 @@ replaces Cilium, Tetragon, Netra and PacketWolf, and Machina no longer talks to 
 
 ## Migration into KVM
 
-HyperSDK and hyper2kvm convert guests from other platforms into KVM; GuestKit checks them offline before cutover.
+hyper2kvm converts guests from other platforms into KVM; GuestKit checks them offline before cutover.
 
 ## Automation
 

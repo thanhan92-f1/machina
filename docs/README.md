@@ -114,7 +114,7 @@ Part of the [Zyvor stack](https://zyvor.dev):
 | **atlas** | Ceph / NFS / ZFS storage control plane (`ATLAS_*` integration) |
 | **guestkit** | Guest agent, per-container eBPF policy inside guests, offline disk inspection |
 | **zeus-os (v9s)** | KubeVirt-based cloud that can run on top of Machina hosts |
-| **hypersdk / hyper2kvm** | VM migration into KVM |
+| **hyper2kvm** | VM migration into KVM |
 
 Machina's native eBPF stack (`machina-bpfd`, `machina-cni`) replaces Cilium, Tetragon, Netra and PacketWolf; it no
 longer integrates with any of them.

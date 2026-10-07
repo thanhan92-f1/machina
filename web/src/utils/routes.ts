@@ -59,8 +59,6 @@ interface NavItem {
   label: string
   /** If true, only show in nav when signed in as UNIX `root`. */
   requiresRoot?: boolean
-  /** If true, only show when HyperSDK is enabled on the daemon. */
-  requiresHypersdk?: boolean
 }
 
 /** Match nav item href against current location (supports /fleet-cloud prefix + settings query). */
@@ -90,13 +88,8 @@ export function navItemActive(
   return pathname === path
 }
 
-export function navItemVisible(
-  item: NavItem,
-  username: string,
-  hypersdkEnabled = false,
-): boolean {
+export function navItemVisible(item: NavItem, username: string): boolean {
   if (item.requiresRoot && username !== 'root') return false
-  if (item.requiresHypersdk && !hypersdkEnabled) return false
   return true
 }
 

@@ -53,13 +53,6 @@ export function integrationCards(info: PlatformInfo | null): IntegrationCard[] {
       enabled: Boolean(info.kubevirt?.exec_enabled),
     },
     {
-      id: 'hypersdk',
-      title: 'HyperSDK',
-      description: 'VMware and cloud source scan → Machina migration jobs.',
-      href: '/platform/migration',
-      enabled: Boolean(info.hypersdk?.enabled),
-    },
-    {
       id: 'guestkit',
       title: 'GuestKit',
       description: 'Offline disk doctor, migrate-plan, and inspect job queue.',

@@ -90,7 +90,6 @@ export default function CommandPalette({ onOpenHelp, spotlight = false }: Comman
   const { info } = usePlatformInfoSlow()
   const { username } = useAuth()
   const { openCopilotWithQuery } = useAi()
-  const hypersdkEnabled = Boolean(info?.hypersdk?.enabled)
 
   const toggle = useCallback(() => {
     if (!open && isInputFocused()) return
@@ -362,7 +361,7 @@ export default function CommandPalette({ onOpenHelp, spotlight = false }: Comman
   const desktopTier = loadPlatformDesktopTier()
   const platformActions: PaletteItem[] = [
     { id: 'plat-create-vm', icon: <Plus className="w-4 h-4" />, label: 'Create VM', sublabel: 'Platform wizard', action: () => go('/platform/vms'), category: 'Platform Actions' },
-    { id: 'plat-migrate', icon: <Upload className="w-4 h-4" />, label: 'Import VMware VM', sublabel: 'Migration Assistant', action: () => go('/platform/migration'), category: 'Platform Actions' },
+    { id: 'plat-migrate', icon: <Upload className="w-4 h-4" />, label: 'Import VM', sublabel: 'Migration Radar', action: () => go('/platform/migration'), category: 'Platform Actions' },
     { id: 'plat-iso', icon: <HardDrive className="w-4 h-4" />, label: 'Upload ISO', action: () => go('/platform/content'), category: 'Platform Actions' },
     { id: 'plat-tasks', icon: <ClipboardList className="w-4 h-4" />, label: 'Show running tasks', action: () => go(tasksHubHref(desktopTier)), category: 'Platform Actions' },
     { id: 'plat-alerts', icon: <Bell className="w-4 h-4" />, label: 'Show alerts', action: () => go(operationsHubHref(desktopTier)), category: 'Platform Actions' },
@@ -501,11 +500,6 @@ export default function CommandPalette({ onOpenHelp, spotlight = false }: Comman
     { id: 'qa-fleet-cloud-create', icon: <Plus className="w-4 h-4" />, label: 'Create Fleet Cloud instance', sublabel: 'g o', action: () => go('/fleet-cloud/create'), category: 'Quick Actions' },
     { id: 'qa-fleet-cloud-images', icon: <HardDrive className="w-4 h-4" />, label: 'Fleet Cloud images', sublabel: 'g o', action: () => go('/fleet-cloud/images'), category: 'Quick Actions' },
   )
-  if (hypersdkEnabled) {
-    items.push(
-    )
-  }
-
   if (onOpenHelp) {
     items.push(
       {
@@ -537,7 +531,7 @@ export default function CommandPalette({ onOpenHelp, spotlight = false }: Comman
   if (!onPlatformDesktop) {
     for (const group of navGroups) {
       for (const item of navGroupItems(group)) {
-        if (!navItemVisible(item, username, hypersdkEnabled)) continue
+        if (!navItemVisible(item, username)) continue
         items.push({
           id: `nav-${item.to}`,
           icon: item.icon,

@@ -23,7 +23,7 @@ Autopilot is capacity management for Fleet Cloud: instance groups scale ahead of
 4. See [Fleet Cloud features](../../../fleet-cloud-features.md) for what runs automatically and what always waits for approval.
 
 
-If the page stays empty, check daemon health (`/api/v1/health`), libvirt connectivity, and whether the feature requires Fleet Cloud, HyperSDK, or Launchpad to be enabled.
+If the page stays empty, check daemon health (`/api/v1/health`), libvirt connectivity, and whether the feature requires Fleet Cloud or Launchpad to be enabled.
 
 ## Related pages
 

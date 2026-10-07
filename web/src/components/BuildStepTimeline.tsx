@@ -39,7 +39,7 @@ interface BuildStepTimelineProps {
 }
 
 /**
- * Horizontal milestone strip (HyperSDK-style: numbered steps, check when done, spinner on current).
+ * Horizontal milestone strip (numbered steps, check when done, spinner on current).
  */
 export function BuildStepTimeline({
   steps,

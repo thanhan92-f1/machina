@@ -156,7 +156,7 @@ def main() -> None:
             "",
             "HTML source: machina/docs/client-presentations/",
             "",
-            "zyvor.dev · HyperSDK · © 2026",
+            "zyvor.dev · © 2026",
         ]
     )
     html_body = f"""<html><body style="font-family:system-ui,sans-serif;color:#111">
@@ -165,7 +165,7 @@ def main() -> None:
 <p>Format: <code>docs/client-presentations</code> (hyper2kvm slide-deck style)</p>
 <ul>{''.join(f'<li>{p.name}</li>' for p in pdfs)}</ul>
 <p>Platform VM Detail UX · ConsoleHub Cinema/Studio · Connect hub · Feature QA matrix F01–F13.</p>
-<p><a href="https://zyvor.dev">zyvor.dev</a> · HyperSDK · © 2026</p>
+<p><a href="https://zyvor.dev">zyvor.dev</a> · © 2026</p>
 </body></html>"""
 
     if args.dry_run:

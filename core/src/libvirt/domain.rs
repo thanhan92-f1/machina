@@ -153,6 +153,8 @@ pub fn list_vms(conn: &Connect) -> Result<Vec<VmInfo>, LibvirtError> {
             libvirt_connection: None,
             guest_ip: guest_ips.iter().find(|a| !a.contains(':')).cloned(),
             guest_ips,
+            backend: None,
+            fluxvm_backend: None,
         });
     }
 
@@ -200,6 +202,8 @@ pub fn get_vm_details(conn: &Connect, name: &str) -> Result<VmDetails, LibvirtEr
         filesystems,
         libvirt_connection: None,
         guest_ip,
+        backend: None,
+        fluxvm_backend: None,
     })
 }
 

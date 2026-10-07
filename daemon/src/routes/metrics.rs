@@ -40,6 +40,9 @@ async fn get_vm_metrics(
     Path(name): Path<String>,
     Query(q): Query<ConnQuery>,
 ) -> Result<Json<VmMetrics>, AppError> {
+    if q.is_fluxvm() {
+        return Ok(Json(super::fluxvm::client()?.metrics(&name).await?));
+    }
     let dual = manager.dual_enabled();
     let conn_q = apply_impersonation_session_default(&actor, q);
     let target = manager.resolve_query(conn_q.connection.as_deref());

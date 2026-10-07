@@ -245,7 +245,7 @@ TLS is active only when `enabled=true` **and** both paths are non-empty.
   `socket` (unix path or `unix://…`); `auto_discover=true` searches common
   Podman/Docker socket locations when `socket` is empty. REST:
   `/api/v1/vessel/*`; WebSocket stats/logs under `/ws/v1/vessel/…`.
-- `[kubevirt]`, `[hypersdk]`, and `[guestkit]` —
+- `[kubevirt]`, `[fluxvm]`, and `[guestkit]` —
   integration blocks, all `enabled=false` by default (see
   [Product Guide → Integrations](product-guide.md#integrations)).
 

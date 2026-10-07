@@ -257,10 +257,10 @@ async fn platform_info() -> Json<serde_json::Value> {
             "virtio_container_disk_image": cfg.kubevirt.virtio_container_disk_image,
             "machine_type": cfg.kubevirt.machine_type,
         },
-        "hypersdk": {
-            "enabled": cfg.hypersdk.enabled,
-            "base_url": cfg.hypersdk.base_url,
-            "insecure_tls": cfg.hypersdk.insecure_tls,
+        "fluxvm": {
+            "enabled": cfg.fluxvm.enabled,
+            "base_url": cfg.fluxvm.base_url,
+            "default_backend": cfg.fluxvm.default_backend,
         },
         "guestkit": {
             "enabled": cfg.guestkit.enabled,

@@ -401,7 +401,7 @@ pub async fn explain_screen(
             }
         }
         "migration" => {
-            "Migration Assistant imports workloads from VMware, OVF, or HyperSDK.".into()
+            "Migration Assistant imports workloads from VMware, OVF/OVA, or cloud images.".into()
         }
         "storage" => "Storage pools are imported from libvirt on online hosts.".into(),
         "templates" => "Templates deploy golden images when disk readiness passes.".into(),

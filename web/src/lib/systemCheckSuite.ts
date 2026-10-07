@@ -12,7 +12,6 @@ import {
 import { listVMs } from '../api/vm'
 import { getNodeInfo } from '../api/node'
 import { getK8sEnvironment, getK8sOverview } from '../api/k8s'
-import { getHypersdkStatus } from '../api/hypersdk'
 import { listServices } from '../api/extras'
 import { formatUserError } from '../utils/apiError'
 
@@ -23,7 +22,6 @@ export type CheckCategory =
   | 'host'
   | 'libvirt'
   | 'kubernetes'
-  | 'hypersdk'
   | 'services'
   | 'websocket'
 
@@ -32,7 +30,6 @@ export const CHECK_CATEGORY_LABELS: Record<CheckCategory, string> = {
   host: 'Host & virtualization',
   libvirt: 'Libvirt VMs',
   kubernetes: 'Kubernetes',
-  hypersdk: 'HyperSDK',
   services: 'Systemd services',
   websocket: 'Live events (WebSocket)',
 }
@@ -273,25 +270,6 @@ async function runKubernetesChecks(): Promise<CheckResult[]> {
   return out
 }
 
-async function runHypersdkChecks(platform: PlatformInfo): Promise<CheckResult[]> {
-  if (!platform.hypersdk?.enabled) {
-    return [skip('hypersdk-disabled', 'hypersdk', 'HyperSDK', 'Disabled in daemon config')]
-  }
-  return [
-    await timedCheck('hypersdk-status', 'hypersdk', 'HyperSDK status', async () => {
-      const s = await getHypersdkStatus()
-      if (!s.reachable) {
-        return {
-          status: 'warn',
-          message: s.last_error || `Unreachable at ${s.base_url}`,
-          detail: s,
-        }
-      }
-      return { status: 'pass', message: `Reachable · ${s.base_url}`, detail: s }
-    }),
-  ]
-}
-
 const WATCHED_SERVICES = [
   'machina-daemon.service',
   'libvirtd.service',
@@ -375,7 +353,6 @@ export const CHECK_CATEGORY_ORDER: CheckCategory[] = [
   'host',
   'libvirt',
   'kubernetes',
-  'hypersdk',
   'services',
   'websocket',
 ]
@@ -412,14 +389,6 @@ export async function runSystemCheckSuite(
 
   await runCat('host', runHostChecks)
   await runCat('libvirt', runLibvirtChecks)
-
-  if (platform) {
-    await runCat('hypersdk', () => runHypersdkChecks(platform!))
-  } else {
-    results.push(
-      skip('hypersdk-no-platform', 'hypersdk', 'HyperSDK', 'Platform info unavailable'),
-    )
-  }
 
   await runCat('kubernetes', runKubernetesChecks)
   await runCat('services', runServiceChecks)

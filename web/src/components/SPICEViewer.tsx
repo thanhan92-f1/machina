@@ -6,10 +6,11 @@ import { Maximize, Minimize, Monitor } from 'lucide-react'
 import { getWsToken } from '../api/client'
 import { DEFAULT_DAEMON_PORT } from '../constants'
 import { useConsoleViewportOptional } from './consolehub/ConsoleViewportContext'
+import { vmScopeParam } from '../api/vm'
 
 function wsConnQs(libvirtConnection?: string | null): string {
-  if (!libvirtConnection || libvirtConnection === 'system') return ''
-  return `&connection=${encodeURIComponent(libvirtConnection)}`
+  const param = vmScopeParam(libvirtConnection)
+  return param ? `&${param}` : ''
 }
 
 interface Props {

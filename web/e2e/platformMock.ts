@@ -12,7 +12,6 @@ export const platformInfo = {
     direct_url: 'http://127.0.0.1:5093',
   },
   kubevirt: { exec_enabled: true },
-  hypersdk: { enabled: true, base_url: 'http://127.0.0.1:8787', insecure_tls: true },
   guestkit: { enabled: true, base_url: 'http://127.0.0.1:8790', insecure_tls: true },
   fleet: { enabled: false, peer_count: 0 },
 }
@@ -1166,23 +1165,6 @@ export async function mockPlatformApi(page: Page, opts?: {
       return route.fulfill({
         json: { raw: { href: 'https://access.redhat.com/downloads/content/e2e-rhel-9' } },
       })
-    }
-    if (url.includes('/hypersdk/status')) {
-      return route.fulfill({
-        json: { enabled: true, base_url: 'http://127.0.0.1:8787', insecure_tls: true, reachable: true },
-      })
-    }
-    if (url.includes('/hypersdk/providers/list')) {
-      return route.fulfill({ json: { providers: [{ provider: 'vmware', connected: true, name: 'vcenter-lab' }] } })
-    }
-    if (url.includes('/hypersdk/proxy') && route.request().method() === 'POST') {
-      return route.fulfill({ json: { ok: true, method: 'POST', path: '/providers', probe: true } })
-    }
-    if (url.includes('/hypersdk/proxy')) {
-      return route.fulfill({ json: { providers: [{ provider: 'vmware', connected: true }] } })
-    }
-    if (url.includes('/hypersdk/providers/vms')) {
-      return route.fulfill({ json: { vms: [{ name: 'vcenter-vm-1', status: 'poweredOn' }] } })
     }
     if (url.includes('/kubevirt/qcow2-bundle') && route.request().method() === 'POST') {
       return route.fulfill({

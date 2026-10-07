@@ -235,7 +235,6 @@ declare -a JOBS=(
   "machina|$(pick_latest "${HOME}/machina-dist")"
   "v9s|$(pick_latest "${HOME}/v9s-dist")"
   "guestkit|$(pick_latest "${HOME}/guestkit-dist")"
-  "hypersdk|$(pick_latest "${HOME}/hypersdk-dist")"
   "hyper2kvm|$(pick_latest "${HOME}/hyper2kvm-dist")"
   "ragnarok|$(pick_latest "${HOME}/ragnarok-dist")"
   "Aether|$(pick_latest "${HOME}/aether-dist")"

@@ -17,10 +17,31 @@ export interface VmInfo {
   libvirt_connection?: string
   /** Best-effort IPv4 from libvirt lease / ARP / guest agent. */
   guest_ip?: string | null
+  /** `fluxvm` for VMs managed by fluxvm-api; absent for libvirt domains. */
+  backend?: string
+  /** FluxVM hypervisor: `qemu`, `cloud-hypervisor`, `firecracker`, `flux-vm`. */
+  fluxvm_backend?: string
+}
+
+/**
+ * FluxVM VMs ride the existing `connection` plumbing: rows carry
+ * `libvirt_connection: 'fluxvm'`, and every URL helper turns that into `?backend=fluxvm`.
+ */
+export const FLUXVM_CONNECTION = 'fluxvm'
+
+export function isFluxvmConnection(connection?: string | null): boolean {
+  return connection === FLUXVM_CONNECTION
+}
+
+/** Query param for a VM scope: '' (system), `connection=session`, or `backend=fluxvm`. */
+export function vmScopeParam(connection?: string | null): string {
+  if (!connection || connection === 'system') return ''
+  if (isFluxvmConnection(connection)) return 'backend=fluxvm'
+  return `connection=${encodeURIComponent(connection)}`
 }
 
 /** Best-effort parse so list UIs never throw if `/vms` returns unexpected shapes (proxy bugs, partial JSON). */
-function sanitizeVmInfo(row: unknown): VmInfo | null {
+export function sanitizeVmInfo(row: unknown): VmInfo | null {
   if (!row || typeof row !== 'object') return null
   const r = row as Record<string, unknown>
   const nameRaw = r.name
@@ -59,6 +80,11 @@ function sanitizeVmInfo(row: unknown): VmInfo | null {
   if (libvirt_connection) vm.libvirt_connection = libvirt_connection
   const guestIpRaw = r.guest_ip
   if (typeof guestIpRaw === 'string' && guestIpRaw.trim()) vm.guest_ip = guestIpRaw.trim()
+  if (r.backend === FLUXVM_CONNECTION) {
+    vm.backend = FLUXVM_CONNECTION
+    vm.libvirt_connection = FLUXVM_CONNECTION
+    if (typeof r.fluxvm_backend === 'string' && r.fluxvm_backend) vm.fluxvm_backend = r.fluxvm_backend
+  }
   return vm
 }
 
@@ -78,22 +104,34 @@ export interface VmDetails {
   libvirt_connection?: string
   /** Best-effort IPv4 from libvirt lease / ARP / guest agent. */
   guest_ip?: string | null
+  backend?: string
+  fluxvm_backend?: string
 }
 
-/** Append `connection=` to a path or full URL that may already have a `?…` query string. */
+/** Append the VM scope (`connection=` or `backend=fluxvm`) to a path or URL that may already have a query. */
 export function appendVmConnection(url: string, connection?: string | null): string {
+  const param = vmScopeParam(connection)
+  if (!param) return url
+  const sep = url.includes('?') ? '&' : '?'
+  return `${url}${sep}${param}`
+}
+
+/** In-app route query: `?connection=session|fluxvm` (the UI's scope; API calls go through `appendVmConnection`). */
+function appendRouteConnection(url: string, connection?: string | null): string {
   if (!connection || connection === 'system') return url
   const sep = url.includes('?') ? '&' : '?'
   return `${url}${sep}connection=${encodeURIComponent(connection)}`
 }
 
-/** In-app routes for a guest, with optional `?connection=session` when using dual libvirt. */
+/** In-app routes for a guest, with optional `?connection=session` (dual libvirt) or `?connection=fluxvm`. */
 export function vmDetailRoute(name: string, connection?: string | null): string {
-  return appendVmConnection(`/vms/${encodeURIComponent(name)}`, connection)
+  return appendRouteConnection(`/vms/${encodeURIComponent(name)}`, connection)
 }
 
+/** FluxVM guests have no libvirt console plan; their console is the serial tab on the detail page. */
 export function vmConsoleRoute(name: string, connection?: string | null): string {
-  return appendVmConnection(`/vms/${encodeURIComponent(name)}/consolehub`, connection)
+  if (isFluxvmConnection(connection)) return `${vmDetailRoute(name, connection)}&tab=serial`
+  return appendRouteConnection(`/vms/${encodeURIComponent(name)}/consolehub`, connection)
 }
 
 /** Row / selection key when system and session guests can share the same name. */
@@ -240,6 +278,22 @@ export interface CreateVmRequest {
   virt_install_disk_backing_store?: string
   /** When `[libvirt] dual_connection`: `system` (default) or `session` — where the domain is defined. */
   libvirt_connection?: string
+  /** `fluxvm` creates the guest through fluxvm-api (`[fluxvm] enabled`); omit for libvirt. */
+  backend?: string
+  /** FluxVM hypervisor: `auto` | `qemu` | `cloud-hypervisor` | `firecracker` | `flux-vm`. */
+  fluxvm_backend?: string
+  /** Base image path on the FluxVM host. */
+  fluxvm_image?: string
+  /** Host bridge for the tap (FluxVM attaches its eBPF VM edge to the tap). */
+  fluxvm_bridge?: string
+  /** Without a bridge or uplink: `netns` (default: tap in its own namespace + eBPF edge), `user` (QEMU only), `none`. */
+  fluxvm_network?: string
+  /** Host NIC for a bridge-less tap (FluxVM TC/eBPF redirect). */
+  fluxvm_direct_uplink?: string
+  /** `l2-uplink` (default) or `peer-veth`. */
+  fluxvm_direct_mode?: string
+  /** Guest IPv4s for `l2-uplink` ARP steering (at most 8). */
+  fluxvm_direct_guest_ips?: string[]
 }
 
 export interface VmTemplate {
@@ -268,7 +322,9 @@ export async function listVMs(): Promise<VmInfo[]> {
   return out
 }
 export const getVM = (name: string, connection?: string | null) =>
-  readJsonObject<VmDetails>(appendVmConnection(`${API}/vms/${encodeURIComponent(name)}`, connection))
+  readJsonObject<VmDetails>(appendVmConnection(`${API}/vms/${encodeURIComponent(name)}`, connection)).then((d) =>
+    d.backend === FLUXVM_CONNECTION ? { ...d, libvirt_connection: FLUXVM_CONNECTION } : d,
+  )
 export const getVMXml = (name: string, connection?: string | null) =>
   apiGetText(appendVmConnection(`${API}/vms/${encodeURIComponent(name)}/xml`, connection))
 

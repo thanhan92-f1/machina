@@ -258,7 +258,7 @@ Start with [Engineering onboarding](docs/ENGINEERING_ONBOARDING.md); architectur
 | **Machina** | Private cloud on KVM: VMs, fleet, Fleet Cloud, native eBPF, Zyra AI |
 | **Atlas** | Storage control plane (Ceph/NFS/ZFS) for VM disks, snapshots, backups |
 | **GuestKit** | In-guest agent, offline inspection, per-container eBPF policy |
-| **HyperSDK / hyper2kvm** | Multi-cloud VM migration into KVM |
+| **hyper2kvm** | VM migration into KVM |
 
 → [zyvor.dev](https://zyvor.dev)
 

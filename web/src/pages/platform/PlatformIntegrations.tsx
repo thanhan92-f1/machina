@@ -133,7 +133,7 @@ export default function PlatformIntegrations({ embedded }: { embedded?: boolean 
 
         <MacGlassPanel title="Leaving the desktop">
           <p className="text-sm text-[var(--text-muted)] leading-relaxed">
-            Fleet Cloud, HyperSDK, GuestKit, and classic routes open outside the Platform shell. You stay signed in to the same Machina session — use the top bar or <Link to="/platform" className={hubLinkClasses()}>Platform home</Link> to return.
+            Fleet Cloud, GuestKit, and classic routes open outside the Platform shell. You stay signed in to the same Machina session — use the top bar or <Link to="/platform" className={hubLinkClasses()}>Platform home</Link> to return.
           </p>
         </MacGlassPanel>
 

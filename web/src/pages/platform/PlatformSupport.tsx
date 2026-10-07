@@ -15,7 +15,6 @@ const TIPS = [
   { q: 'VM won\'t start', a: 'Run a health check on the VM detail page. Check Tasks for failed vm.start operations.' },
   { q: 'Migration stuck', a: 'Open Tasks and look for vm.migrate. Verify destination host is online and libvirt is reachable.' },
   { q: 'Guest tools missing', a: 'Use Install tools on the VM overview tab, then install qemu-guest-agent inside the guest OS.' },
-  { q: 'HyperSDK unreachable', a: 'Ensure hypervisord is running on :5080 and [hypersdk] is enabled in machina config.' },
 ]
 
 export default function PlatformSupport({ embedded }: { embedded?: boolean } = {}) {

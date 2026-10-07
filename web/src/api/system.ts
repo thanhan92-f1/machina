@@ -99,10 +99,10 @@ export interface PlatformInfo {
     virtio_container_disk_image: string
     machine_type: string
   }
-  hypersdk?: {
+  fluxvm?: {
     enabled: boolean
     base_url: string
-    insecure_tls: boolean
+    default_backend: string
   }
   guestkit?: {
     enabled: boolean

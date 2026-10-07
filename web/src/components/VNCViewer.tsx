@@ -9,10 +9,11 @@ import { useConsoleViewportOptional } from './consolehub/ConsoleViewportContext'
 import type { ViewportMode } from './consolehub/ConsoleViewportContext'
 import { inferConsoleMonitors, monitorScrollTarget } from '../utils/consoleMonitors'
 import { useConsoleClipboardOptional } from './consolehub/ConsoleClipboardContext'
+import { vmScopeParam } from '../api/vm'
 
 function wsConnQs(libvirtConnection?: string | null): string {
-  if (!libvirtConnection || libvirtConnection === 'system') return ''
-  return `&connection=${encodeURIComponent(libvirtConnection)}`
+  const param = vmScopeParam(libvirtConnection)
+  return param ? `&${param}` : ''
 }
 
 interface Props {

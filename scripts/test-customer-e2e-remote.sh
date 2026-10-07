@@ -61,7 +61,6 @@ package_script_for() {
     machina) echo "${TT}/machina/scripts/package-binary-remote.sh" ;;
     v9s) echo "${TT}/v9s/scripts/package-binary-remote.sh" ;;
     guestkit) echo "${TT}/guestkit/scripts/package-binary-remote.sh" ;;
-    hypersdk|hypersdk-) echo "${TT}/hypersdk-/scripts/package-binary-remote.sh" ;;
     hyper2kvm|hyper2kvm-) echo "${TT}/hyper2kvm-/scripts/package-binary-remote.sh" ;;
     ragnarok) echo "${TT}/ragnarok/scripts/package-binary-remote.sh" ;;
     aether) echo "${TT}/Aether/scripts/package-binary-remote.sh" ;;

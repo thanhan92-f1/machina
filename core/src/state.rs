@@ -22,6 +22,12 @@ pub struct VmInfo {
     /// Every guest address seen (all NICs, IPv4 then IPv6).
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub guest_ips: Vec<String>,
+    /// `fluxvm` for VMs managed by `fluxvm-api`; absent for libvirt domains.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub backend: Option<String>,
+    /// FluxVM hypervisor (`qemu`, `cloud-hypervisor`, `firecracker`, `flux-vm`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub fluxvm_backend: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -45,6 +51,12 @@ pub struct VmDetails {
     /// Best-effort guest IPv4 from DHCP lease, ARP, or qemu-guest-agent (when running).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub guest_ip: Option<String>,
+    /// `fluxvm` for VMs managed by `fluxvm-api`; absent for libvirt domains.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub backend: Option<String>,
+    /// FluxVM hypervisor (`qemu`, `cloud-hypervisor`, `firecracker`, `flux-vm`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub fluxvm_backend: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -468,6 +480,34 @@ pub struct CreateVmRequest {
     /// When `[libvirt] dual_connection`: `system` or `session` — which libvirt URI defines this guest.
     #[serde(default)]
     pub libvirt_connection: String,
+    /// VM backend: `""`/`libvirt` (default) or `fluxvm` (needs `[fluxvm] enabled`).
+    #[serde(default)]
+    pub backend: String,
+    /// FluxVM hypervisor: `""` (use `[fluxvm] default_backend`), `auto`, `qemu`,
+    /// `cloud-hypervisor`, `firecracker`, `flux-vm`.
+    #[serde(default)]
+    pub fluxvm_backend: String,
+    /// FluxVM base image path on the host (cloned per VM). Falls back to `existing_disk`.
+    #[serde(default)]
+    pub fluxvm_image: String,
+    /// FluxVM host bridge for a TAP NIC (FluxVM attaches its eBPF VM edge to the tap).
+    #[serde(default)]
+    pub fluxvm_bridge: String,
+    /// FluxVM network when neither `fluxvm_bridge` nor `fluxvm_direct_uplink` is set:
+    /// `""`/`netns` (TAP in its own namespace with DHCP + NAT and the eBPF VM edge),
+    /// `user` (QEMU user-mode NAT, no tap and no eBPF) or `none`.
+    #[serde(default)]
+    pub fluxvm_network: String,
+    /// Host NIC for a bridge-less TAP: FluxVM's TC/eBPF redirect moves frames between it
+    /// and the tap. Mutually exclusive with `fluxvm_bridge`.
+    #[serde(default)]
+    pub fluxvm_direct_uplink: String,
+    /// `l2-uplink` (default, physical/bond NIC) or `peer-veth` (CNI pod `eth0`).
+    #[serde(default)]
+    pub fluxvm_direct_mode: String,
+    /// Guest IPv4s for `l2-uplink` ARP steering (at most 8).
+    #[serde(default)]
+    pub fluxvm_direct_guest_ips: Vec<String>,
 }
 
 fn default_graphics_listen() -> String {
@@ -552,6 +592,14 @@ impl Default for CreateVmRequest {
             virt_install_user_login: String::new(),
             virt_install_user_password: String::new(),
             libvirt_connection: String::new(),
+            backend: String::new(),
+            fluxvm_backend: String::new(),
+            fluxvm_image: String::new(),
+            fluxvm_bridge: String::new(),
+            fluxvm_network: String::new(),
+            fluxvm_direct_uplink: String::new(),
+            fluxvm_direct_mode: String::new(),
+            fluxvm_direct_guest_ips: Vec::new(),
         }
     }
 }
@@ -1550,6 +1598,8 @@ mod tests {
                 libvirt_connection: None,
                 guest_ip: None,
                 guest_ips: Vec::new(),
+                backend: None,
+                fluxvm_backend: None,
             },
             VmInfo {
                 name: "bravo".into(),
@@ -1559,6 +1609,8 @@ mod tests {
                 libvirt_connection: None,
                 guest_ip: None,
                 guest_ips: Vec::new(),
+                backend: None,
+                fluxvm_backend: None,
             },
         ];
         state.search_query = "zzzznotfound".into();
@@ -1579,6 +1631,8 @@ mod tests {
             libvirt_connection: None,
             guest_ip: None,
             guest_ips: Vec::new(),
+            backend: None,
+            fluxvm_backend: None,
         }];
         state.search_query.clear();
         state.apply_search_filter();
@@ -1599,6 +1653,8 @@ mod tests {
                 libvirt_connection: None,
                 guest_ip: None,
                 guest_ips: Vec::new(),
+                backend: None,
+                fluxvm_backend: None,
             },
             VmInfo {
                 name: "bravo".into(),
@@ -1608,6 +1664,8 @@ mod tests {
                 libvirt_connection: None,
                 guest_ip: None,
                 guest_ips: Vec::new(),
+                backend: None,
+                fluxvm_backend: None,
             },
             VmInfo {
                 name: "charlie".into(),
@@ -1617,6 +1675,8 @@ mod tests {
                 libvirt_connection: None,
                 guest_ip: None,
                 guest_ips: Vec::new(),
+                backend: None,
+                fluxvm_backend: None,
             },
         ];
         state.search_query = "alpha".into();
@@ -1637,6 +1697,8 @@ mod tests {
                 libvirt_connection: None,
                 guest_ip: None,
                 guest_ips: Vec::new(),
+                backend: None,
+                fluxvm_backend: None,
             },
             VmInfo {
                 name: "b".into(),
@@ -1646,6 +1708,8 @@ mod tests {
                 libvirt_connection: None,
                 guest_ip: None,
                 guest_ips: Vec::new(),
+                backend: None,
+                fluxvm_backend: None,
             },
             VmInfo {
                 name: "c".into(),
@@ -1655,6 +1719,8 @@ mod tests {
                 libvirt_connection: None,
                 guest_ip: None,
                 guest_ips: Vec::new(),
+                backend: None,
+                fluxvm_backend: None,
             },
         ];
         state.compute_dashboard();
@@ -1678,6 +1744,8 @@ mod tests {
                 libvirt_connection: None,
                 guest_ip: None,
                 guest_ips: Vec::new(),
+                backend: None,
+                fluxvm_backend: None,
             },
             VmInfo {
                 name: "alpha".into(),
@@ -1687,6 +1755,8 @@ mod tests {
                 libvirt_connection: None,
                 guest_ip: None,
                 guest_ips: Vec::new(),
+                backend: None,
+                fluxvm_backend: None,
             },
             VmInfo {
                 name: "bravo".into(),
@@ -1696,6 +1766,8 @@ mod tests {
                 libvirt_connection: None,
                 guest_ip: None,
                 guest_ips: Vec::new(),
+                backend: None,
+                fluxvm_backend: None,
             },
         ];
         state.sort_column = SortColumn::Name;

@@ -41,7 +41,7 @@ const MACHINA_HELP_LINKS: HelpDocLink[] = [
     href: ZEUS_OS_HELP.productUrl,
   },
   {
-    label: 'Zyvor — HyperSDK suite',
+    label: 'Zyvor suite',
     href: ZYVOR_URL,
   },
 ]

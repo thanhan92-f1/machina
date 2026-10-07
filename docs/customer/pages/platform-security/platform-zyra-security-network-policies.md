@@ -23,7 +23,7 @@ VM network policies decide which VM may talk to which, in both directions, using
 4. See [VM network policy](../../../ebpf/vm-network-policy.md) for the supported fields and how enforcement fails open.
 
 
-If the page stays empty, check daemon health (`/api/v1/health`), libvirt connectivity, and whether the feature requires Fleet Cloud, HyperSDK, or Launchpad to be enabled.
+If the page stays empty, check daemon health (`/api/v1/health`), libvirt connectivity, and whether the feature requires Fleet Cloud or Launchpad to be enabled.
 
 ## Related pages
 

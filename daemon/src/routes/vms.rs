@@ -7,6 +7,7 @@ use std::time::Duration;
 
 use axum::extract::{Extension, Path, Query, State};
 use axum::response::sse::{Event, KeepAlive, Sse};
+use axum::response::IntoResponse;
 use axum::routing::{delete, get, post};
 use axum::{Json, Router};
 use futures_util::stream::{self, StreamExt};
@@ -82,12 +83,46 @@ async fn list_vms(
             machina_core::libvirt::domain::list_vms(conn)
         })
         .await?;
-        return Ok(Json(vms));
+        return Ok(Json(super::fluxvm::merge_into(vms).await));
     }
     let result = tokio::task::spawn_blocking(move || manager.list_all_vms())
         .await
         .map_err(|e| AppError::from(LibvirtError::Internal(format!("Task failed: {e}"))))?;
-    Ok(Json(result?))
+    Ok(Json(super::fluxvm::merge_into(result?).await))
+}
+
+/// `?backend=fluxvm`, or no `backend` given while `[fluxvm]` is enabled and the
+/// name exists in FluxVM but not in libvirt (keeps CLI/scripts working).
+async fn targets_fluxvm(
+    manager: &LibvirtManager,
+    actor: &RequestActor,
+    conn_q: &ConnQuery,
+    name: &str,
+) -> bool {
+    if conn_q.is_fluxvm() {
+        return true;
+    }
+    if conn_q.backend.is_some() || !MachinaConfig::load().fluxvm.enabled {
+        return false;
+    }
+    let n = name.to_string();
+    let in_libvirt = spawn_libvirt_actor(manager.clone(), Some(actor), conn_q.clone(), move |c| {
+        Ok(domain::lookup_domain(c, &n).is_ok())
+    })
+    .await
+    .unwrap_or(true);
+    if in_libvirt {
+        return false;
+    }
+    match super::fluxvm::client() {
+        Ok(c) => c.resolve(name).await.is_ok(),
+        Err(_) => false,
+    }
+}
+
+async fn fluxvm_action(name: &str, verb: &str) -> Result<(), AppError> {
+    super::fluxvm::client()?.action(name, verb).await?;
+    Ok(())
 }
 
 async fn get_vm_details(
@@ -96,6 +131,10 @@ async fn get_vm_details(
     Path(name): Path<String>,
     Query(conn_q): Query<ConnQuery>,
 ) -> Result<Json<VmDetails>, AppError> {
+    if targets_fluxvm(&manager, &actor, &conn_q, &name).await {
+        let rec = super::fluxvm::client()?.get(&name).await?;
+        return Ok(Json(rec.to_vm_details()));
+    }
     let dual = manager.dual_enabled();
     let conn_q = crate::conn_query::apply_impersonation_session_default(&actor, conn_q);
     let target = manager.resolve_query(conn_q.connection.as_deref());
@@ -158,6 +197,7 @@ async fn kubevirt_bundle_handler(
     let name2 = name.clone();
     let conn_q = ConnQuery {
         connection: q.connection.clone(),
+        backend: None,
     };
     let details = spawn_libvirt_actor(manager, Some(&actor), conn_q, move |c| {
         domain::get_vm_details(c, &name2)
@@ -350,6 +390,13 @@ async fn start_vm(
     // from vms:write could still start any VM); use require_write like every other
     // mutating handler in this file so both role and token scope are enforced.
     require_write(&actor, "vms:write")?;
+    if targets_fluxvm(&manager, &actor, &conn_q, &name).await {
+        fluxvm_action(&name, "start").await?;
+        log_audit("start", &name, "ok");
+        vm_events::emit_vm_started(&name);
+        super::bpf::notify_vm_lifecycle();
+        return Ok(ok_json("started", &name));
+    }
     let name2 = name.clone();
     spawn_libvirt_actor(manager, Some(&actor), conn_q, move |conn| {
         domain::start_vm(conn, &name2)
@@ -368,6 +415,13 @@ async fn stop_vm(
     Query(conn_q): Query<ConnQuery>,
 ) -> Result<Json<serde_json::Value>, AppError> {
     require_write(&actor, "vms:write")?;
+    if targets_fluxvm(&manager, &actor, &conn_q, &name).await {
+        fluxvm_action(&name, "stop").await?;
+        log_audit("stop", &name, "ok");
+        vm_events::emit_vm_stopped(&name);
+        super::bpf::notify_vm_lifecycle();
+        return Ok(ok_json("stopped", &name));
+    }
     let name2 = name.clone();
     spawn_libvirt_actor(manager, Some(&actor), conn_q, move |conn| {
         domain::stop_vm(conn, &name2)
@@ -386,6 +440,13 @@ async fn shutdown_vm(
     Query(conn_q): Query<ConnQuery>,
 ) -> Result<Json<serde_json::Value>, AppError> {
     require_write(&actor, "vms:write")?;
+    if targets_fluxvm(&manager, &actor, &conn_q, &name).await {
+        fluxvm_action(&name, "stop").await?;
+        log_audit("shutdown", &name, "ok");
+        vm_events::emit_vm_shutdown(&name);
+        super::bpf::notify_vm_lifecycle();
+        return Ok(ok_json("shutting down", &name));
+    }
     let name2 = name.clone();
     spawn_libvirt_actor(manager, Some(&actor), conn_q, move |conn| {
         domain::shutdown_vm(conn, &name2)
@@ -403,6 +464,11 @@ async fn reboot_vm(
     Query(conn_q): Query<ConnQuery>,
 ) -> Result<Json<serde_json::Value>, AppError> {
     require_write(&actor, "vms:write")?;
+    if targets_fluxvm(&manager, &actor, &conn_q, &name).await {
+        fluxvm_action(&name, "restart").await?;
+        vm_events::emit_vm_reboot(&name);
+        return Ok(ok_json("rebooting", &name));
+    }
     let name2 = name.clone();
     spawn_libvirt_actor(manager, Some(&actor), conn_q, move |conn| {
         domain::reboot_vm(conn, &name2)
@@ -419,6 +485,11 @@ async fn pause_vm(
     Query(conn_q): Query<ConnQuery>,
 ) -> Result<Json<serde_json::Value>, AppError> {
     require_write(&actor, "vms:write")?;
+    if targets_fluxvm(&manager, &actor, &conn_q, &name).await {
+        fluxvm_action(&name, "pause").await?;
+        vm_events::emit_vm_paused(&name);
+        return Ok(ok_json("paused", &name));
+    }
     let name2 = name.clone();
     spawn_libvirt_actor(manager, Some(&actor), conn_q, move |conn| {
         domain::pause_vm(conn, &name2)
@@ -435,6 +506,11 @@ async fn resume_vm(
     Query(conn_q): Query<ConnQuery>,
 ) -> Result<Json<serde_json::Value>, AppError> {
     require_write(&actor, "vms:write")?;
+    if targets_fluxvm(&manager, &actor, &conn_q, &name).await {
+        fluxvm_action(&name, "resume").await?;
+        vm_events::emit_vm_resumed(&name);
+        return Ok(ok_json("resumed", &name));
+    }
     let name2 = name.clone();
     spawn_libvirt_actor(manager, Some(&actor), conn_q, move |conn| {
         domain::resume_vm(conn, &name2)
@@ -473,6 +549,13 @@ async fn delete_vm_handler(
     Query(q): Query<DeleteVmQuery>,
 ) -> Result<Json<serde_json::Value>, AppError> {
     require_destroy_vm(&actor)?;
+    if targets_fluxvm(&manager, &actor, &conn_q, &name).await {
+        super::fluxvm::client()?.delete(&name).await?;
+        log_audit_with_actor(Some(&actor.username), "delete", &name, "ok");
+        vm_events::emit_vm_deleted(&name);
+        super::bpf::notify_vm_lifecycle();
+        return Ok(ok_json("deleted", &name));
+    }
     let opts = UndefineOptions {
         managed_save: q.undefine_managed_save,
         snapshots_metadata: q.undefine_snapshots_metadata,
@@ -829,12 +912,65 @@ fn ensure_session_libvirt_identity(
     )))
 }
 
+fn wants_fluxvm_create(req: &CreateVmRequest) -> bool {
+    machina_core::fluxvm::is_fluxvm(Some(req.backend.as_str()))
+}
+
+/// Create on `fluxvm-api`; refuses a name already used by either backend.
+async fn create_fluxvm_vm(
+    manager: &LibvirtManager,
+    actor: &RequestActor,
+    req: &CreateVmRequest,
+) -> Result<(), LibvirtError> {
+    let name = req.name.clone();
+    let n = name.clone();
+    let clash = spawn_libvirt_actor(
+        manager.clone(),
+        Some(actor),
+        ConnQuery::default(),
+        move |c| Ok(domain::lookup_domain(c, &n).is_ok()),
+    )
+    .await
+    .unwrap_or(false);
+    if clash {
+        return Err(LibvirtError::Invalid(format!(
+            "a libvirt VM named '{name}' already exists"
+        )));
+    }
+    let c = machina_core::fluxvm::FluxvmClient::from_config(&MachinaConfig::load().fluxvm)?;
+    if c.resolve(&name).await.is_ok() {
+        return Err(LibvirtError::Invalid(format!(
+            "a FluxVM VM named '{name}' already exists"
+        )));
+    }
+    match c.create(req).await {
+        Ok(_) => {
+            log_audit_with_actor(Some(&actor.username), "create", &name, "ok (fluxvm)");
+            super::bpf::notify_vm_lifecycle();
+            Ok(())
+        }
+        Err(e) => {
+            log_audit_with_actor(
+                Some(&actor.username),
+                "create",
+                &name,
+                &truncate_audit_result(format!("fail (fluxvm): {e}")),
+            );
+            Err(e)
+        }
+    }
+}
+
 async fn create_vm_handler(
-    State(_manager): State<LibvirtManager>,
+    State(manager): State<LibvirtManager>,
     Extension(actor): Extension<RequestActor>,
     Json(mut req): Json<CreateVmRequest>,
 ) -> Result<Json<serde_json::Value>, AppError> {
     require_write(&actor, "vms:write")?;
+    if wants_fluxvm_create(&req) {
+        create_fluxvm_vm(&manager, &actor, &req).await?;
+        return Ok(ok_json("created", &req.name));
+    }
     validate_create_vm_payload(&req)?;
     let name = req.name.clone();
     let cfg = MachinaConfig::load();
@@ -891,12 +1027,26 @@ async fn create_vm_handler(
 /// as **SSE** (`text/event-stream`). Final event: `event: complete` with JSON `{"status":"created","name":"..."}`
 /// or `event: error` with a plain-text message.
 async fn create_vm_stream_handler(
-    State(_manager): State<LibvirtManager>,
+    State(manager): State<LibvirtManager>,
     Extension(jobs): Extension<std::sync::Arc<JobRegistry>>,
     Extension(actor): Extension<RequestActor>,
     Json(mut req): Json<CreateVmRequest>,
-) -> Result<Sse<impl futures_util::Stream<Item = Result<Event, Infallible>> + Send>, AppError> {
+) -> Result<axum::response::Response, AppError> {
     require_write(&actor, "vms:write")?;
+    if wants_fluxvm_create(&req) {
+        let name = req.name.clone();
+        let done = match create_fluxvm_vm(&manager, &actor, &req).await {
+            Ok(()) => Event::default().event("complete").data(
+                serde_json::json!({ "status": "created", "name": name, "backend": "fluxvm" })
+                    .to_string(),
+            ),
+            Err(e) => Event::default().event("error").data(e.to_string()),
+        };
+        let start = Event::default().data(format!("Creating '{name}' on FluxVM…"));
+        return Ok(
+            Sse::new(stream::iter([Ok::<Event, Infallible>(start), Ok(done)])).into_response(),
+        );
+    }
     validate_create_vm_payload(&req)?;
 
     let name = req.name.clone();
@@ -984,11 +1134,13 @@ async fn create_vm_stream_handler(
         .chain(ReceiverStream::new(tok_rx).map(|line| Ok(Event::default().data(line))))
         .chain(tail);
 
-    Ok(Sse::new(stream).keep_alive(
-        KeepAlive::new()
-            .interval(Duration::from_secs(20))
-            .text("keepalive"),
-    ))
+    Ok(Sse::new(stream)
+        .keep_alive(
+            KeepAlive::new()
+                .interval(Duration::from_secs(20))
+                .text("keepalive"),
+        )
+        .into_response())
 }
 
 async fn set_vcpus(

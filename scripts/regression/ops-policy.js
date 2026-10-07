@@ -134,15 +134,15 @@ async function getJson(path) {
   });
 
   await mark('marketplace-plugin-install-uninstall', async () => {
-    let r = await api('POST', `${P}/api/v1/marketplace/plugins/hypersdk/install`, {});
+    let r = await api('POST', `${P}/api/v1/marketplace/plugins/kubevirt-bridge/install`, {});
     if (!ok(r.status) || isHtml(r.body)) throw new Error(`install ${r.status} ${String(r.body).slice(0, 80)}`);
     const inst = JSON.parse(r.body);
     if (!inst.installed) throw new Error(JSON.stringify(inst).slice(0, 80));
-    r = await api('POST', `${P}/api/v1/marketplace/plugins/hypersdk/uninstall`, {});
+    r = await api('POST', `${P}/api/v1/marketplace/plugins/kubevirt-bridge/uninstall`, {});
     if (!ok(r.status) || isHtml(r.body)) throw new Error(`uninstall ${r.status}`);
     const un = JSON.parse(r.body);
     if (un.installed !== false) throw new Error(JSON.stringify(un).slice(0, 80));
-    return 'hypersdk roundtrip';
+    return 'kubevirt-bridge roundtrip';
   });
 
   await mark('policy-rules', async () => {
@@ -286,9 +286,9 @@ async function getJson(path) {
     return `count=${j.length}`;
   });
 
-  // ensure hypersdk uninstalled
+  // ensure kubevirt-bridge uninstalled
   try {
-    await api('POST', `${P}/api/v1/marketplace/plugins/hypersdk/uninstall`, {});
+    await api('POST', `${P}/api/v1/marketplace/plugins/kubevirt-bridge/uninstall`, {});
   } catch {
     /* ignore */
   }

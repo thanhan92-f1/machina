@@ -24,6 +24,8 @@ import { BuildStepTimeline } from '../components/BuildStepTimeline'
 import WizardStepper from '../components/WizardStepper'
 import { ChoiceCard, ChoiceCardGrid } from '../components/ChoiceCards'
 import { useToastContext } from '../contexts/ToastContext'
+import { usePlatformInfo } from '../contexts/PlatformInfoContext'
+import FluxvmCreatePanel from '../components/vm/FluxvmCreatePanel'
 import {
   MACHINA_PACKER_SCRIPT_GUESTS,
   PACKER_SCRIPT_REPO,
@@ -51,6 +53,7 @@ import {
   Monitor,
   Network,
   Terminal,
+  Zap,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { formatUserError } from '../utils/apiError'
@@ -60,7 +63,7 @@ import { statusToneClass } from '../utils/semanticColors'
 
 type InstallSource = 'iso' | 'url' | 'pxe' | 'download'
 type StorageMode = 'new' | 'volume'
-type PageFlow = 'install' | 'golden'
+type PageFlow = 'install' | 'golden' | 'fluxvm'
 type GoldenKind = 'template' | 'backing'
 type GuestProfile = 'auto' | 'linux' | 'windows'
 
@@ -78,6 +81,8 @@ export default function CreateVMPage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const toast = useToastContext()
+  const { info: platformInfo } = usePlatformInfo()
+  const fluxvmEnabled = platformInfo?.fluxvm?.enabled === true
   const logEndRef = useRef<HTMLDivElement>(null)
   const packerLogEndRef = useRef<HTMLDivElement>(null)
 
@@ -750,10 +755,21 @@ export default function CreateVMPage() {
             title="Clone from golden image"
             description="Many identical worker guests from a Packer qcow2 — saved template or thin overlay on a golden disk."
           />
+          {fluxvmEnabled && (
+            <ChoiceCard
+              largeIcon
+              tone="violet"
+              selected={pageFlow === 'fluxvm'}
+              onClick={() => setPageFlow('fluxvm')}
+              icon={<Zap className="w-5 h-5" />}
+              title="FluxVM guest"
+              description="QEMU, Cloud Hypervisor or Firecracker via fluxvm-api — lifecycle, metrics and serial console."
+            />
+          )}
         </ChoiceCardGrid>
       </div>
 
-      {libSummary?.dual_connection && (
+      {libSummary?.dual_connection && pageFlow !== 'fluxvm' && (
         <div className="bg-[var(--apple-surface)] rounded-xl p-5 border border-[var(--apple-hairline)] space-y-3">
           <h3 className="text-sm font-semibold text-[var(--text-primary)]">Hypervisor scope</h3>
           <p className="text-xs text-[var(--text-muted)]">Daemon is merging system + session libvirt (same pattern as Cockpit Machines). Choose where this domain should be defined.</p>
@@ -772,6 +788,18 @@ export default function CreateVMPage() {
             </label>
           </div>
         </div>
+      )}
+
+      {pageFlow === 'fluxvm' && fluxvmEnabled && (
+        <FluxvmCreatePanel
+          initialName={vmName}
+          defaultHypervisor={platformInfo?.fluxvm?.default_backend}
+          onCreated={(created) => {
+            toast.success(`FluxVM guest '${created}' created.`)
+            navigate(vmDetailRoute(created, 'fluxvm'))
+          }}
+          onError={(msg) => toast.error(`Create failed: ${msg}`)}
+        />
       )}
 
       {pageFlow === 'install' && (
@@ -1899,7 +1927,7 @@ export default function CreateVMPage() {
         }}
       />
       </div>
-      <aside className="hidden xl:block sticky top-20" aria-label="Summary" data-testid="create-vm-summary">
+      <aside className={pageFlow === 'fluxvm' ? 'hidden' : 'hidden xl:block sticky top-20'} aria-label="Summary" data-testid="create-vm-summary">
         <div className="rounded-2xl border border-[var(--apple-hairline)] bg-[var(--apple-surface)] p-4">
           <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--text-muted)]">Summary</p>
           <p className="mt-1 truncate text-base font-semibold text-[var(--text-primary)]">{vmName.trim() || 'Unnamed guest'}</p>

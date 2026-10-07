@@ -201,7 +201,19 @@ async fn console_handler(
     Path(name): Path<String>,
     Query(conn_q): Query<ConnQuery>,
     State(manager): State<LibvirtManager>,
-) -> impl IntoResponse {
+) -> axum::response::Response {
+    if conn_q.is_fluxvm() {
+        let upstream = match super::fluxvm::client() {
+            Ok(c) => match c.resolve(&name).await {
+                Ok(rec) => Ok(c.serial_ws(&rec.id)),
+                Err(e) => Err(e.to_string()),
+            },
+            Err(_) => Err("FluxVM backend is disabled ([fluxvm] enabled = false)".to_string()),
+        };
+        return ws
+            .on_upgrade(move |socket| handle_fluxvm_serial(socket, name, upstream))
+            .into_response();
+    }
     let name_xml = name.clone();
     let pty_path = match spawn_libvirt_actor(manager, Some(&actor), conn_q, move |conn| {
         let xml = domain::get_vm_xml(conn, &name_xml)?;
@@ -229,6 +241,94 @@ async fn console_handler(
     };
 
     ws.on_upgrade(move |socket| handle_console(socket, name, pty_path))
+        .into_response()
+}
+
+/// Bridge the browser console socket to `fluxvm-api`'s `/v1/vms/{id}/serial`.
+/// FluxVM sends raw serial bytes as binary frames; the console UI expects text.
+async fn handle_fluxvm_serial(
+    socket: WebSocket,
+    name: String,
+    upstream: Result<(String, Option<String>), String>,
+) {
+    use tokio_tungstenite::tungstenite::client::IntoClientRequest;
+    use tokio_tungstenite::tungstenite::Message as UpMsg;
+
+    let (mut ws_sink, mut ws_stream) = socket.split();
+    let (url, token) = match upstream {
+        Ok(u) => u,
+        Err(e) => {
+            let _ = ws_sink
+                .send(Message::Text(
+                    format!("\r\nFluxVM serial for '{name}': {e}\r\n").into(),
+                ))
+                .await;
+            return;
+        }
+    };
+    let mut req = match url.as_str().into_client_request() {
+        Ok(r) => r,
+        Err(e) => {
+            let _ = ws_sink
+                .send(Message::Text(
+                    format!("\r\nBad FluxVM serial URL: {e}\r\n").into(),
+                ))
+                .await;
+            return;
+        }
+    };
+    if let Some(t) = token {
+        if let Ok(v) = format!("Bearer {t}").parse() {
+            req.headers_mut().insert("authorization", v);
+        }
+    }
+    let upstream = match tokio_tungstenite::connect_async(req).await {
+        Ok((s, _)) => s,
+        Err(e) => {
+            warn!("FluxVM serial connect failed for '{}': {}", name, e);
+            let _ = ws_sink
+                .send(Message::Text(
+                    format!("\r\nFluxVM serial for '{name}' unavailable: {e}\r\n").into(),
+                ))
+                .await;
+            return;
+        }
+    };
+    info!("FluxVM serial WebSocket connected for VM '{}'", name);
+    let (mut up_sink, mut up_stream) = upstream.split();
+
+    let mut down = tokio::spawn(async move {
+        let mut pending = Vec::new();
+        while let Some(Ok(msg)) = up_stream.next().await {
+            let text = match msg {
+                UpMsg::Binary(b) => decode_utf8_chunk(&mut pending, &b),
+                UpMsg::Text(t) => t.as_str().to_string(),
+                UpMsg::Close(_) => break,
+                _ => continue,
+            };
+            if !text.is_empty() && ws_sink.send(Message::Text(text.into())).await.is_err() {
+                break;
+            }
+        }
+    });
+    let mut up = tokio::spawn(async move {
+        while let Some(Ok(msg)) = ws_stream.next().await {
+            let out = match msg {
+                Message::Text(t) => UpMsg::Binary(t.as_bytes().to_vec().into()),
+                Message::Binary(b) => UpMsg::Binary(b.to_vec().into()),
+                Message::Close(_) => break,
+                _ => continue,
+            };
+            if up_sink.send(out).await.is_err() {
+                break;
+            }
+        }
+        let _ = up_sink.send(UpMsg::Close(None)).await;
+    });
+    tokio::select! {
+        _ = &mut down => up.abort(),
+        _ = &mut up => down.abort(),
+    }
 }
 
 async fn handle_console(socket: WebSocket, name: String, pty_path: Option<String>) {

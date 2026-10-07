@@ -1,19 +1,19 @@
 {
   "generated_at": "2026-10-03T19:43:23.603Z",
   "controller_total": 548,
-  "daemon_total": 381,
+  "daemon_total": 374,
   "websocket_total": 12,
-  "total_routes": 941,
+  "total_routes": 934,
   "counts": {
-    "page": 469,
-    "console": 414,
+    "page": 468,
+    "console": 408,
     "fleet-cloud": 27,
     "documented": 19,
     "classic": 12
   },
   "by_source": {
     "controller": 548,
-    "daemon": 381,
+    "daemon": 374,
     "websocket": 12
   },
   "unmapped_count": 0,
@@ -5517,62 +5517,6 @@
     },
     {
       "path": "/api/v1/host/virtualization",
-      "methods": [
-        "GET"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/hypersdk/migrations/jobs",
-      "methods": [
-        "GET"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/hypersdk/migrations/jobs/{id}",
-      "methods": [
-        "GET"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/hypersdk/migrations/submit",
-      "methods": [
-        "POST"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/hypersdk/providers/list",
-      "methods": [
-        "GET"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/hypersdk/providers/vms",
-      "methods": [
-        "GET"
-      ],
-      "source": "daemon",
-      "surface": "console"
-    },
-    {
-      "path": "/api/v1/hypersdk/proxy",
-      "methods": [
-        "GET"
-      ],
-      "source": "daemon",
-      "surface": "page"
-    },
-    {
-      "path": "/api/v1/hypersdk/status",
       "methods": [
         "GET"
       ],

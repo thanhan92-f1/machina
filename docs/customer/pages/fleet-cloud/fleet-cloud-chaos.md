@@ -23,7 +23,7 @@ Game days inject faults into your own VMs under a lease: network latency and los
 4. Only run game days on VMs you are allowed to disturb; the faults are real.
 
 
-If the page stays empty, check daemon health (`/api/v1/health`), libvirt connectivity, and whether the feature requires Fleet Cloud, HyperSDK, or Launchpad to be enabled.
+If the page stays empty, check daemon health (`/api/v1/health`), libvirt connectivity, and whether the feature requires Fleet Cloud or Launchpad to be enabled.
 
 ## Related pages
 

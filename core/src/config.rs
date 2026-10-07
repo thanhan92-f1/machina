@@ -26,9 +26,9 @@ pub struct MachinaConfig {
     /// Defaults for `GET /api/v1/vms/{name}/kubevirt-bundle` (libvirt qcow2 → KubeVirt manifest generation).
     #[serde(default)]
     pub kubevirt: KubeVirtConfig,
-    /// Optional HyperSDK hypervisord proxy (`/api/v1/hypersdk/*`).
+    /// Optional FluxVM backend (`fluxvm-api`) alongside libvirt.
     #[serde(default)]
-    pub hypersdk: HypersdkConfig,
+    pub fluxvm: FluxvmConfig,
     /// Optional GuestKit worker proxy (`/api/v1/guestkit/*`) for offline disk assurance jobs.
     #[serde(default)]
     pub guestkit: GuestkitConfig,
@@ -394,36 +394,47 @@ impl Default for KubeVirtConfig {
     }
 }
 
-fn default_hypersdk_base_url() -> String {
-    "https://127.0.0.1:5080".to_string()
+fn default_fluxvm_base_url() -> String {
+    "http://127.0.0.1:7788".to_string()
 }
 
-/// Proxy settings for HyperSDK bulk migrations (hypervisord on :5080 by default).
+fn default_fluxvm_backend() -> String {
+    "auto".to_string()
+}
+
+/// FluxVM (`fluxvm-api`) as a second VM backend next to libvirt. VMs are
+/// chosen per VM (`backend = "fluxvm"` on create, `?backend=fluxvm` on actions).
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct HypersdkConfig {
+pub struct FluxvmConfig {
     #[serde(default)]
     pub enabled: bool,
-    #[serde(default = "default_hypersdk_base_url")]
+    #[serde(default = "default_fluxvm_base_url")]
     pub base_url: String,
-    /// Skip TLS certificate verification when proxying hypervisord (lab / self-signed).
-    /// Secure by default (matches LdapConfig/GuestkitConfig): unconditionally trusting
-    /// any cert would let a MITM on the hypervisord link intercept bulk-migration
-    /// traffic. A deployment terminating hypervisord over HTTPS with a self-signed
-    /// cert must opt in explicitly via `hypersdk.insecure_tls = true` in config.toml.
-    #[serde(default = "default_hypersdk_insecure_tls")]
+    /// Bearer token for `[[auth.tokens]]` on the FluxVM side. Empty works only
+    /// against a loopback `fluxvm-api` with auth off.
+    #[serde(default)]
+    pub token: String,
+    /// Read the token from this file instead (takes precedence over `token`).
+    #[serde(default)]
+    pub token_file: String,
+    /// Skip TLS certificate verification (lab / self-signed). Secure by default.
+    #[serde(default)]
     pub insecure_tls: bool,
+    /// FluxVM hypervisor used when a create request doesn't pick one:
+    /// `auto`, `qemu`, `cloud-hypervisor`, `firecracker`, `flux-vm`.
+    #[serde(default = "default_fluxvm_backend")]
+    pub default_backend: String,
 }
 
-fn default_hypersdk_insecure_tls() -> bool {
-    false
-}
-
-impl Default for HypersdkConfig {
+impl Default for FluxvmConfig {
     fn default() -> Self {
         Self {
             enabled: false,
-            base_url: default_hypersdk_base_url(),
-            insecure_tls: default_hypersdk_insecure_tls(),
+            base_url: default_fluxvm_base_url(),
+            token: String::new(),
+            token_file: String::new(),
+            insecure_tls: false,
+            default_backend: default_fluxvm_backend(),
         }
     }
 }
@@ -1256,17 +1267,16 @@ impl MachinaConfig {
         Self::default()
     }
 
-    /// Loud startup warning when the HyperSDK proxy's TLS-verification bypass is
-    /// enabled. It defaults to secure (see `default_hypersdk_insecure_tls`); an
-    /// admin who explicitly flips it on should see it called out at boot, not
-    /// discover it silently while debugging an unrelated MITM incident.
+    /// Loud startup warning when the FluxVM link's TLS-verification bypass is
+    /// enabled. It defaults to secure; an admin who explicitly flips it on
+    /// should see it called out at boot.
     fn warn_on_insecure_tls(config: &Self) {
-        if config.hypersdk.enabled && config.hypersdk.insecure_tls {
+        if config.fluxvm.enabled && config.fluxvm.insecure_tls {
             tracing::warn!(
-                "hypersdk.insecure_tls = true: TLS certificate verification is DISABLED for the \
-                 hypervisord proxy link ({}). Only use this for lab/self-signed setups — it \
+                "fluxvm.insecure_tls = true: TLS certificate verification is DISABLED for the \
+                 fluxvm-api link ({}). Only use this for lab/self-signed setups — it \
                  accepts any certificate and is vulnerable to MITM.",
-                config.hypersdk.base_url
+                config.fluxvm.base_url
             );
         }
     }

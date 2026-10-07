@@ -45,7 +45,7 @@ provider, all over the same model.
 
 - **Live migration** between hosts in a fleet, from VM detail or the API (a `vm.migrate` task).
 - **Clone** a VM or turn it into a template.
-- **Import** from other platforms with HyperSDK / hyper2kvm, checked offline by GuestKit.
+- **Import** from other platforms with hyper2kvm, checked offline by GuestKit.
 
 ## Guest agent
 

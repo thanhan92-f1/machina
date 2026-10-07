@@ -107,7 +107,7 @@ Every route is also listed in the [complete page index](../PAGE_INDEX.md).
 | [Launchpad (on Mission Control)](platform/platform-launchpad.md) | Launchpad tiles live on Mission Control (`/platform`) — there is no separate `/platform/launchpad` route. |
 | [Maintenance](platform/platform-maintenance.md) | Maintenance — Machina Platform page at `/platform/maintenance`. |
 | [Marketplace](platform/platform-marketplace.md) | Marketplace — Machina Platform page at `/platform/marketplace`. |
-| [Migration Assistant](platform/platform-migration.md) | Migration Radar: bring VMs into Machina from VMware vCenter, ESXi, OVF/OVA, VMDK or cloud images. HyperSDK discovers and converts source VMs; GuestKit checks disks offline before and after conversion. |
+| [Migration Assistant](platform/platform-migration.md) | Migration Radar: bring VMs into Machina from OVF/OVA, VMDK or cloud images. GuestKit checks disks offline before and after conversion. |
 | [Network canvas](platform/platform-network-canvas.md) | Network Canvas — Machina Platform page at `/platform/network-canvas`. |
 | [Networks](platform/platform-networks.md) | The fleet network pane: libvirt networks across hosts, overlay segments with east-west policy, and IPAM pools that hand out addresses from a segment CIDR. |
 | [Alerts](platform/platform-notifications.md) | Alerts — Machina Platform page at `/platform/notifications`. |

@@ -514,7 +514,7 @@ code, .font-mono, pre {
 
 /* Usage: network/nav → --machina-accent-network; AI/copilot → --machina-accent-ai; risk → --machina-accent-security */
 
-/* VM status badges (HyperSDK-inspired, glass-friendly soft + optional solid) */
+/* VM status badges (glass-friendly soft + optional solid) */
 .machina-vm-status {
   display: inline-flex;
   align-items: center;

@@ -98,7 +98,7 @@ export default function VsOpenStack(): ReactNode {
             <div>
               <Heading as="h3">Moving off VMware or OpenStack?</Heading>
               <p>
-                HyperSDK and hyper2kvm convert guests into KVM, and GuestKit checks them offline before cutover. Machina
+                hyper2kvm converts guests into KVM, and GuestKit checks them offline before cutover. Machina
                 imports the result as ordinary libvirt domains.
               </p>
             </div>

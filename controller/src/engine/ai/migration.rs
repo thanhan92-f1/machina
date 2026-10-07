@@ -27,7 +27,7 @@ pub struct MigrationAdvisorReport {
 pub fn advise_vmware_vm(vm_name: &str, os_hint: &str, has_rdm: bool) -> MigrationAdvisorReport {
     let mut safe = vec![
         "Standard libvirt/KVM target supported".into(),
-        "HyperSDK conversion path available".into(),
+        "virt-v2v / OVF conversion path available".into(),
     ];
     let mut risks = Vec::new();
     let mut remediation = Vec::new();

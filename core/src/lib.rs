@@ -11,6 +11,7 @@ pub mod config;
 pub mod firecracker;
 pub mod firewall;
 pub mod fleet_placement;
+pub mod fluxvm;
 pub mod fmt;
 pub mod guest_os;
 pub mod host_cockpit;
@@ -46,7 +47,7 @@ pub use api_error::{
     format_http_error_body, format_user_error, friendly_error_code, sanitize_error_text,
 };
 pub use config::{
-    AuthConfig, FleetConfig, FleetPeer, GuestkitConfig, HypersdkConfig, KubeVirtConfig, LdapConfig,
+    AuthConfig, FleetConfig, FleetPeer, FluxvmConfig, GuestkitConfig, KubeVirtConfig, LdapConfig,
     MachinaConfig, OidcConfig, OidcDefaultRole, RunAsUserConfig, SshTerminalConfig,
     SshTerminalTarget, VesselConfig, VmCreateBackend, DEFAULT_DAEMON_PORT,
 };

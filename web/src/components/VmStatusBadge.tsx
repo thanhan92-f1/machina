@@ -5,7 +5,7 @@ import { vmStatusBadgeClasses } from '../utils/vmVisual'
 
 interface VmStatusBadgeProps {
   state: string | undefined | null
-  /** solid = HyperSDK-style filled pill; soft = glass-friendly tint */
+  /** solid = filled pill; soft = glass-friendly tint */
   variant?: 'soft' | 'solid'
   className?: string
 }

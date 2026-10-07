@@ -15,7 +15,6 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { useWebSocketContext } from '../contexts/WebSocketContext'
 import { useToastContext } from '../contexts/ToastContext'
 import { usePlatformInfo } from '../contexts/PlatformInfoContext'
-import { useHypersdkConnection } from '../hooks/useHypersdkConnection'
 import { getK8sEnvironment, getK8sOverview, type K8sOverview } from '../api/k8s'
 import { getVesselStatus, listVesselContainers, type VesselStatus } from '../api/vessel'
 import PageLayout from '../components/PageLayout'
@@ -45,7 +44,6 @@ export default function Dashboard() {
   const { subscribe, events } = useWebSocketContext()
   const toast = useToastContext()
   const { info, lastEvent, refreshKey } = usePlatformInfo()
-  const { phase: hsPhase } = useHypersdkConnection()
   const [k8sOverview, setK8sOverview] = useState<K8sOverview | null>(null)
   const [k8sError, setK8sError] = useState<string | null>(null)
   const [vesselStatus, setVesselStatus] = useState<VesselStatus | null>(null)
@@ -173,8 +171,7 @@ export default function Dashboard() {
     platformEnabled ||
     Boolean(k8sOverview || k8sError) ||
     Boolean(vesselStatus?.connected) ||
-    Boolean(info?.guestkit?.enabled) ||
-    hsPhase === 'unreachable'
+    Boolean(info?.guestkit?.enabled)
 
   if (loading) return <DashboardSkeleton />
 
@@ -374,17 +371,6 @@ export default function Dashboard() {
                   <span className="min-w-0">
                     <span className="apple-dest-title block">GuestKit</span>
                     <span className="apple-dest-sub block">Migration jobs</span>
-                  </span>
-                  <span className="apple-dest-chevron" aria-hidden>›</span>
-                </Link>
-              </li>
-            )}
-            {hsPhase === 'unreachable' && (
-              <li>
-                <Link to="/platform/migration" className="apple-dest-row">
-                  <span className="min-w-0">
-                    <span className={`apple-dest-title block ${statusToneClass('warn')}`}>HyperSDK unreachable</span>
-                    <span className="apple-dest-sub block">Check migration connectivity</span>
                   </span>
                   <span className="apple-dest-chevron" aria-hidden>›</span>
                 </Link>

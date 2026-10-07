@@ -4,13 +4,9 @@
 import { test, expect } from '@playwright/test'
 import { mockPlatformApi } from './platformMock'
 
-test('Migration radar ESXi source triggers HyperSDK scan', async ({ page }) => {
+test('Migration radar OVF source opens the import wizard', async ({ page }) => {
   await mockPlatformApi(page, { tier: 'power' })
   await page.goto('/platform/migration')
-  const scanReq = page.waitForResponse(
-    (r) => r.url().includes('/hypersdk/providers/vms') && r.request().method() === 'GET',
-  )
-  await page.getByTestId('migration-source-esxi').click()
-  await scanReq
-  await expect(page.getByText('vcenter-vm-1')).toBeVisible({ timeout: 15_000 })
+  await page.getByRole('button', { name: /OVF \/ OVA File/ }).click()
+  await expect(page).toHaveURL(/\/import$/, { timeout: 15_000 })
 })

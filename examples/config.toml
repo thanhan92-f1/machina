@@ -112,11 +112,14 @@ uri = "qemu:///system"
 # kubeconfig_path = "/root/.kube/config"
 # upload_timeout_minutes = 120
 
-# HyperSDK bulk migrations (proxy /api/v1/hypersdk/* → hypervisord).
-[hypersdk]
-enabled = true
-base_url = "https://127.0.0.1:5080"
-insecure_tls = true
+# FluxVM as a second VM backend next to libvirt (fluxvm-api REST).
+[fluxvm]
+enabled = false
+base_url = "http://127.0.0.1:7788"
+# token = ""            # bearer token from fluxvm [[auth.tokens]]
+# token_file = ""       # or read it from a file
+# insecure_tls = false
+# default_backend = "auto"   # auto | qemu | cloud-hypervisor | firecracker | flux-vm
 
 [guestkit]
 enabled = true

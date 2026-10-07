@@ -162,7 +162,7 @@ runtime auth config (`/system/auth/ldap-settings`, `/oidc-settings`,
 `POST /fleet/placement\|create-vm`, `GET /fleet/prometheus`.
 
 **Integrations** (mounted under `/api/v1`): `vessel` (local Podman/Docker),
-`k8s`, `kubevirt`, `hypersdk`, `guestkit`, `zeus_firewall`, `automation`,
+`k8s`, `kubevirt`, `fluxvm`, `guestkit`, `zeus_firewall`, `automation`,
 `backup`, `jobs`, `templates`, `guest_images`, `platform_controller`
 (reverse-proxy to the controller).
 
@@ -296,8 +296,7 @@ engine behind Zyra AI. See [../controller-ha.md](../controller-ha.md),
   credentials to wire up. The legacy external-cloud client integration
   (compute/image/network/identity management, and pushing local VMs to an
   external cloud) has been fully removed.
-- **HyperSDK / hyper2kvm / GuestKit** — multi-cloud VM migration and offline
-  assurance.
+- **hyper2kvm / GuestKit** — VM migration into KVM and offline assurance.
 - **Observability** — Prometheus scrape, remote-write ingest, OTLP/HTTP export
   to Grafana Alloy / OpenTelemetry Collector, Linux audit integration. See
   [../guides/observability.md](../guides/observability.md).

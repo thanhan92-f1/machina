@@ -33,6 +33,7 @@ const ENDPOINTS = [
   ['GET', '/api/v1/storage/pools'],
   ['GET', '/api/v1/node'],
   ['GET', '/api/v1/capabilities'],
+  ['GET', '/api/v1/fluxvm/status'],
   ['GET', `/api/v1/vms/${cfg.vmName}/guest-health`],
   ['GET', `/api/v1/vms/${cfg.vmName}/interfaces`],
   ['GET', '/api/v1/platform/controller/api/v1/health'],

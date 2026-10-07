@@ -22,7 +22,7 @@ Threshold alert rules on VM CPU and memory: notify (via Alerts / webhooks) when 
 3. Drill into a VM, host, or Fleet Cloud resource for consoles and detail panels.
 4. For mutating actions (create/delete VM, apply firewall, Fleet Cloud change): confirm the target host and role (Admin/Operator).
 
-If the page stays empty, check daemon health (`/api/v1/health`), libvirt connectivity, and whether the feature requires Fleet Cloud, HyperSDK, or Launchpad to be enabled.
+If the page stays empty, check daemon health (`/api/v1/health`), libvirt connectivity, and whether the feature requires Fleet Cloud or Launchpad to be enabled.
 
 ## Related pages
 

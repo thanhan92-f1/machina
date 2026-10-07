@@ -1,6 +1,6 @@
 # Active Directory — zyvorai.local lab
 
-Integrate Machina, Zeus OS, and the HyperSDK suite with the **zyvorai.local** domain controller.
+Integrate Machina and Zeus OS with the **zyvorai.local** domain controller.
 
 | Field | Value |
 |-------|--------|
@@ -76,10 +76,6 @@ export ZEUS_OS_LDAP_BIND_DN_TEMPLATE={}@zyvorai.local
 Sign in on the Zeus login page with `sshant@zyvorai.local`.
 
 See: Enterprise auth and tenancy, `../v9s/docs/ENTERPRISE_AUTH_TENANCY.md` (sibling repo).
-
-## HyperSDK web
-
-Marketing and client decks reference suite-wide LDAP/AD under Machina + Zeus OS identity. Run `npm run presentations:sync -- --product=machina` in hypersdk-web after updating machina decks.
 
 ## Troubleshooting
 

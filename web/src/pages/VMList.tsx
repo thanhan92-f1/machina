@@ -313,6 +313,9 @@ export default function VMList() {
                       {vm.libvirt_connection === 'session' && (
                         <span className={sessionBadgeClasses()}>session</span>
                       )}
+                      {vm.backend === 'fluxvm' && (
+                        <span className={sessionBadgeClasses()} title="Managed by fluxvm-api">FluxVM{vm.fluxvm_backend ? ` · ${vm.fluxvm_backend}` : ''}</span>
+                      )}
                       {(vmTagsMap[vmScopeKey(vm)] || []).map(t => (
                         <span key={t} className={`px-1.5 py-0.5 rounded-full text-[10px] font-medium ${statusBadgeClasses('info')}`}>{t}</span>
                       ))}
@@ -327,7 +330,7 @@ export default function VMList() {
                     <div className="flex items-center justify-end gap-1">
                       {vm.state === 'running' && (
                         <>
-                          <Link to={vmConsoleRoute(vm.name, vm.libvirt_connection)} className="p-1.5 hover:bg-[var(--surface-hover)] rounded transition" title="VNC console" aria-label="VNC console">
+                          <Link to={vmConsoleRoute(vm.name, vm.libvirt_connection)} className="p-1.5 hover:bg-[var(--surface-hover)] rounded transition" title="Console" aria-label="Console">
                             <Monitor className="w-4 h-4 text-[var(--text-secondary)]" />
                           </Link>
                           <button type="button" onClick={() => setSshVm(vm)} className="p-1.5 hover:bg-[var(--surface-hover)] rounded transition" title="SSH" aria-label="SSH">
@@ -397,6 +400,9 @@ export default function VMList() {
                   <Link to={vmDetailRoute(vm.name, vm.libvirt_connection)} className={`font-semibold truncate ${statusActionLinkClasses('info')}`}>{vm.name}</Link>
                   {vm.libvirt_connection === 'session' && (
                     <span className={sessionBadgeClasses('shrink-0')}>session</span>
+                  )}
+                  {vm.backend === 'fluxvm' && (
+                    <span className={sessionBadgeClasses('shrink-0')} title="Managed by fluxvm-api">FluxVM{vm.fluxvm_backend ? ` · ${vm.fluxvm_backend}` : ''}</span>
                   )}
                 </div>
                 <span className={`shrink-0 ${getStateBadgeClasses(vm.state)}`}>{vm.state}</span>

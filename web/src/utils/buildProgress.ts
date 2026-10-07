@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0
 
 /**
- * Derive UX timeline phases from streamed host logs (same idea as HyperSDK workflow step bars).
+ * Derive UX timeline phases from streamed host logs (workflow step bars).
  */
 
 export const VM_CREATE_TIMELINE_LABELS = [

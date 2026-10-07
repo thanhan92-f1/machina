@@ -585,6 +585,8 @@ mod tests {
             filesystems: vec![],
             libvirt_connection: None,
             guest_ip: None,
+            backend: None,
+            fluxvm_backend: None,
         };
         let disk = pick_root_boot_disk(&d).unwrap();
         assert!(disk.source.ends_with(".qcow2"));

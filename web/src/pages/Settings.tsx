@@ -17,7 +17,6 @@ import { getOsUserCapability, createOsUser, deleteOsUser, OsUserCapability } fro
 import { getIntegrationsStatus, type IntegrationsStatus } from '../api/integrations'
 import { usePlatformInfo } from '../contexts/PlatformInfoContext'
 import { usePlatformTabState } from '../hooks/usePlatformTabState'
-import { useHypersdkConnection } from '../hooks/useHypersdkConnection'
 import { listVMs, VmInfo } from '../api/vm'
 import { useToastContext } from '../contexts/ToastContext'
 import {
@@ -44,7 +43,6 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true)
   const toast = useToastContext()
   const { info } = usePlatformInfo()
-  const { phase: hsPhase } = useHypersdkConnection()
 
   // Data
   const [roles, setRoles] = useState<UserRole[]>([])
@@ -166,11 +164,6 @@ export default function SettingsPage() {
           <div className="flex flex-wrap gap-2 text-xs">
             {info?.kubevirt?.exec_enabled && (
               <span className="px-2 py-1 rounded border border-[var(--accent)]/40 text-[var(--link)]">Kubernetes · exec enabled</span>
-            )}
-            {info?.hypersdk?.enabled && (
-              <span className={statusSurfaceClasses(hsPhase === 'live' ? 'ok' : 'warn', 'px-2 py-1 rounded border')}>
-                HyperSDK · {hsPhase}
-              </span>
             )}
             {info?.guestkit?.enabled && (
               <span className="px-2 py-1 rounded border border-orange-500/40 text-orange-600">GuestKit · enabled</span>

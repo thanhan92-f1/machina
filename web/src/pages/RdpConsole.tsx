@@ -6,15 +6,15 @@ import { useParams, useSearchParams, Link } from 'react-router'
 import { ArrowLeft, Monitor } from 'lucide-react'
 import { getRdpInfo } from '../api/rdp'
 import { getWsToken } from '../api/client'
-import { appendVmConnection } from '../api/vm'
+import { appendVmConnection, vmScopeParam } from '../api/vm'
 import ErrorBanner from '../components/ErrorBanner'
 import { formatUserError } from '../utils/apiError'
 import { connectionStatusTone, statusToneClass } from '../utils/semanticColors'
 import { useTranslation } from 'react-i18next'
 
 function wsConnQs(connection: string | null): string {
-  if (!connection || connection === 'system') return ''
-  return `&connection=${encodeURIComponent(connection)}`
+  const param = vmScopeParam(connection)
+  return param ? `&${param}` : ''
 }
 
 /** Binary WebSocket tunnel to guest RDP (port 3389). Pair with an RDP client or future WASM decoder. */

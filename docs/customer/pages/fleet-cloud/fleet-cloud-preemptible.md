@@ -23,7 +23,7 @@ Preemptible instances are VMs that can wait. When a host runs short of memory, t
 4. See [Fleet Cloud features](../../../fleet-cloud-features.md) for how pressure is detected and what is guaranteed.
 
 
-If the page stays empty, check daemon health (`/api/v1/health`), libvirt connectivity, and whether the feature requires Fleet Cloud, HyperSDK, or Launchpad to be enabled.
+If the page stays empty, check daemon health (`/api/v1/health`), libvirt connectivity, and whether the feature requires Fleet Cloud or Launchpad to be enabled.
 
 ## Related pages
 

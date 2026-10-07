@@ -12,7 +12,6 @@ export const ZYVOR_HELP = {
   products: 'https://zyvor.dev/docs/products',
   contact: 'https://zyvor.dev/contact',
   demo: 'https://zyvor.dev/demo',
-  hypersdk: 'https://zyvor.dev/hypersdk',
   suite: 'https://zyvor.dev/docs/intro#suite-product-guides',
   sales: 'mailto:sales@zyvor.dev',
   info: 'mailto:info@zyvor.dev',

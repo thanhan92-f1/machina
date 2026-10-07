@@ -23,7 +23,7 @@ describe('vmVisual', () => {
     expect(vmStateTone('crashed')).toBe('error')
   })
 
-  it('builds hypersdk-aligned badge classes', () => {
+  it('builds status badge classes', () => {
     expect(vmStatusBadgeClasses('running')).toContain('machina-vm-status--running')
     expect(vmStatusBadgeClasses('paused')).toContain('machina-vm-status--paused')
     expect(vmStatusBadgeClasses('stopped', 'solid')).toContain('machina-vm-status--solid')

@@ -9,10 +9,11 @@ import { RefreshCw, Trash2, Maximize, Minimize } from 'lucide-react'
 import { getWsToken } from '../api/client'
 import { statusBgClass } from '../utils/semanticColors'
 import Tooltip from './Tooltip'
+import { vmScopeParam } from '../api/vm'
 
 function wsConnQs(libvirtConnection?: string | null): string {
-  if (!libvirtConnection || libvirtConnection === 'system') return ''
-  return `&connection=${encodeURIComponent(libvirtConnection)}`
+  const param = vmScopeParam(libvirtConnection)
+  return param ? `&${param}` : ''
 }
 
 interface Props {

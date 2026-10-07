@@ -10,12 +10,12 @@ pub mod consolehub;
 pub(crate) mod events;
 mod extras;
 mod fleet;
+pub(crate) mod fluxvm;
 mod guest_images;
 mod guest_policy;
 mod guestkit;
 mod health;
 mod host_network;
-mod hypersdk;
 mod integrations;
 mod jobs;
 mod k8s;
@@ -49,7 +49,7 @@ pub fn api_routes() -> Router<LibvirtManager> {
         .merge(k8s::k8s_routes())
         .merge(kubevirt::kubevirt_routes())
         .merge(integrations::integrations_routes())
-        .merge(hypersdk::hypersdk_routes())
+        .merge(fluxvm::fluxvm_routes())
         .merge(guestkit::guestkit_routes())
         .merge(zeus_firewall::zeus_firewall_routes())
         .merge(platform_controller::platform_controller_routes())

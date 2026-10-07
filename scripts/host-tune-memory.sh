@@ -66,7 +66,7 @@ swapon --show
 
 if $DISABLE_NGINX; then
   echo "Disabling nginx public sites (80/443) ..."
-  for f in /etc/nginx/conf.d/hypersdk-website.conf /etc/nginx/conf.d/v9s.conf; do
+  for f in /etc/nginx/conf.d/v9s.conf; do
     [[ -f "$f" && ! -f "${f}.disabled" ]] && mv "$f" "${f}.disabled"
   done
   systemctl stop nginx 2>/dev/null || true
@@ -82,4 +82,3 @@ fi
 echo "Memory:"
 free -h
 echo "Machina: https://<host>:5092/ (not nginx 80/443)"
-echo "HyperSDK direct: https://<host>:5080/"

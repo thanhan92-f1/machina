@@ -1,7 +1,8 @@
 // Copyright 2026 Zyvor AI Labs · https://zyvor.dev
 // SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0
 
-//! Optional `?connection=system|session` for Cockpit-style dual libvirt hypervisors.
+//! Optional `?connection=system|session` for Cockpit-style dual libvirt hypervisors,
+//! and `?backend=fluxvm` for VMs managed by `fluxvm-api` instead of libvirt.
 
 use serde::Deserialize;
 use virt::connect::Connect;
@@ -15,9 +16,16 @@ use crate::error::AppError;
 pub struct ConnQuery {
     #[serde(default)]
     pub connection: Option<String>,
+    /// `fluxvm` routes the call to `fluxvm-api`; absent / `libvirt` = libvirt.
+    #[serde(default)]
+    pub backend: Option<String>,
 }
 
 impl ConnQuery {
+    pub fn is_fluxvm(&self) -> bool {
+        machina_core::fluxvm::is_fluxvm(self.backend.as_deref())
+    }
+
     pub fn target(&self, mgr: &LibvirtManager) -> LibvirtTarget {
         mgr.resolve_query(self.connection.as_deref())
     }
@@ -84,6 +92,11 @@ pub async fn spawn_libvirt_actor<R>(
 where
     R: Send + 'static,
 {
+    if conn_q.is_fluxvm() {
+        return Err(AppError::from(LibvirtError::Invalid(
+            "this operation is not supported for FluxVM VMs (backend=fluxvm)".into(),
+        )));
+    }
     let conn_q = match actor {
         Some(a) => apply_impersonation_session_default(a, conn_q),
         None => conn_q,

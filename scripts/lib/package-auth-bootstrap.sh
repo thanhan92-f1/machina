@@ -114,9 +114,6 @@ pkg_env_bootstrap_auth_for_file() {
                 fi
             fi
             ;;
-        hypersdk)
-            pkg_env_ensure_var "${env_file}" "HYPERSDK_API_KEY" "Admin@321"
-            ;;
         hyper2kvm)
             pkg_env_ensure_var "${env_file}" "HYPER2KVM_API_KEY" "Admin@321"
             ;;
