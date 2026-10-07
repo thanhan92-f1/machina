@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-10-07 — FluxVM: full VM management and fleet HA
+
+See [docs/fluxvm.md](docs/fluxvm.md).
+
+- **Daemon.** FluxVM VMs get snapshots, backups (QEMU), add-only vCPU/memory hot-add (QEMU, Cloud Hypervisor),
+  extra NICs on host-bridge QEMU VMs, live migration (to the same host or another fluxvm-api; QEMU on a shared disk)
+  and a guest-agent console (`/ws/v1/fluxvm-console/{name}`). Create takes a kernel/initrd/args, the agent switch and
+  a shared disk. `wss://` fluxvm-api works, with `[fluxvm] insecure_tls` for self-signed certs.
+- **Web.** VM detail → **Manage** and **Agent console** tabs on FluxVM VMs, showing what each engine supports.
+- **Fleet.** `machina-agent` reports FluxVM VMs (`MACHINA_FLUXVM_URL`); the controller keeps them in inventory,
+  powers and deletes them, migrates them between hosts (`vm.migrate`, DRS) and re-creates them on another host for HA
+  (`ha.recover`, `POST /api/v1/vms/{id}/fluxvm/recover`). Migration `068`.
+- **Tests.** `make regression-fluxvm`: 24/24 on the lab host. Migration and HA were run host-to-itself only.
+
 ## 2026-10-06 — Fleet Cloud: EC2 semantics and API
 
 See [docs/cloud-ec2-semantics.md](docs/cloud-ec2-semantics.md) and [docs/cloud-ec2-api.md](docs/cloud-ec2-api.md).

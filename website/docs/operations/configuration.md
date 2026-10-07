@@ -42,8 +42,9 @@ key_path = "/etc/machina/ssl/key.pem"
 backup_dir = "/var/lib/machina/backups"
 ```
 
-Other sections: `[fleet]` (peer daemons), `[vessel]` (Podman/Docker socket), `[metrics_history]` and
-`[observability.otlp]` (see [Observability](observability.md)).
+Other sections: `[fleet]` (peer daemons), `[vessel]` (Podman/Docker socket), `[metrics_history]`,
+`[observability.otlp]` (see [Observability](observability.md)) and `[fluxvm]` (`enabled`, `base_url`, `token` or
+`token_file`, `insecure_tls`, `default_backend`; see the [FluxVM guide](https://github.com/zyvorai/zyvor-machina/blob/main/docs/fluxvm.md)).
 
 ## Controller: environment
 

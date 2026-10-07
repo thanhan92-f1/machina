@@ -33,6 +33,14 @@ Network enforcement and observability are built in, not integrated: Machina's ow
 replaces Cilium, Tetragon, Netra and PacketWolf, and Machina no longer talks to any of them. See
 [Native eBPF](../networking/ebpf-overview.md).
 
+## FluxVM
+
+A second VM backend next to libvirt: VMs on QEMU, Cloud Hypervisor, Firecracker or flux-vm from a host's
+`fluxvm-api` appear with `backend: "fluxvm"`. Enable it on the daemon with `[fluxvm] enabled = true` and on each
+host's agent with `MACHINA_FLUXVM_URL`. Snapshots, backups (QEMU), hot-add (QEMU, Cloud Hypervisor), extra NICs,
+consoles, live migration and HA re-create (QEMU on a shared disk) are covered in the
+[FluxVM guide](https://github.com/zyvorai/zyvor-machina/blob/main/docs/fluxvm.md).
+
 ## Containers and Kubernetes
 
 - **Containers.** Local Podman or Docker containers and Podman pods run next to your VMs (configure the socket in

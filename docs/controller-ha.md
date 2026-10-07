@@ -19,6 +19,12 @@ The HA engine (`controller/src/engine/ha.rs`) runs on the leader controller:
 Recovery needs the VM's disks to be reachable from the target host (shared
 storage such as NFS, Ceph RBD or Atlas volumes).
 
+FluxVM VMs (`inventory_source = 'fluxvm'`) are recovered by re-creating them
+from their last FluxVM record on the target host, on the same shared disk with
+the disk lock broken (`shared_takeover`); only QEMU VMs on a shared disk can be
+re-created. `vm.migrate` and DRS move them with FluxVM live migration. See
+[fluxvm.md](fluxvm.md#fleet-controller).
+
 ## Fencing
 
 Recovery is **blocked until the failed host is confirmed fenced**, so a
@@ -99,4 +105,5 @@ Litestream. It was ported by routing every query through one layer, not by rewri
 ## Related
 
 - [platform.md](platform.md) — controller setup, host enrollment, mTLS
+- [fluxvm.md](fluxvm.md) — FluxVM VMs: migration and HA re-create
 - [handbook/runbook.md](handbook/runbook.md) — operational procedures

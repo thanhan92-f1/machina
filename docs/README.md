@@ -67,6 +67,7 @@ eBPF datapath (`machina-bpfd`) and a React web UI. The public site with the same
 | Active Directory | [guides/ad-integration-zyvorai.md](guides/ad-integration-zyvorai.md) |
 | Atlas storage (Ceph / NFS / ZFS volumes) | [atlas-storage.md](atlas-storage.md) |
 | KubeVirt migration | [kubevirt-migration.md](kubevirt-migration.md) |
+| FluxVM backend (QEMU / Cloud Hypervisor / Firecracker / flux-vm VMs, fleet migration and HA) | [fluxvm.md](fluxvm.md) |
 | Consoles: console hub, built-in RDP, cinema mode | [consolehub-architecture.md](consolehub-architecture.md), [builtin-rdp.md](builtin-rdp.md), [machina-cinema-mode.md](machina-cinema-mode.md) |
 | VM access and lifecycle guides | [guides/vm-daily-access.md](guides/vm-daily-access.md), [guides/vm-lifecycle-ssh.md](guides/vm-lifecycle-ssh.md), [guides/integrations.md](guides/integrations.md) |
 

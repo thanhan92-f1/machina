@@ -41,6 +41,9 @@ environment variables from their env files.
 | `MACHINA_AGENT_TLS_CERT`, `MACHINA_AGENT_TLS_KEY` | unset | Agent TLS certificate |
 | `MACHINA_AGENT_TOKEN` | unset | Shared token between controller and agent |
 | `MACHINA_BPFD_SOCK` | `/run/machina-bpf/bpfd.sock` | Where to reach `machina-bpfd` |
+| `MACHINA_FLUXVM_URL` | the host's `[fluxvm] base_url` when enabled | fluxvm-api the controller manages FluxVM VMs through |
+| `MACHINA_FLUXVM_TOKEN` | `[fluxvm] token` | Bearer token for it |
+| `MACHINA_FLUXVM_INSECURE_TLS` | `[fluxvm] insecure_tls` | `1` accepts a self-signed fluxvm-api |
 
 ## eBPF (`/etc/default/machina-bpfd`)
 

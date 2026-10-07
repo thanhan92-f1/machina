@@ -311,7 +311,8 @@ engine behind Zyra AI. See [../controller-ha.md](../controller-ha.md),
   host's `machina-agent`, the controller lists them, powers and deletes
   them, migrates them between hosts (`vm.migrate`, DRS) and re-creates them
   on another host for HA (`ha.recover`, `POST /vms/{id}/fluxvm/recover`).
-  Fleet migration and HA re-create need QEMU on a shared disk.
+  Fleet migration and HA re-create need QEMU on a shared disk. See
+  [../fluxvm.md](../fluxvm.md).
 - **Fleet Cloud** (`/fleet-cloud/*` in the UI) — manage instances, flavors,
   networks, images, security groups, stacks, keypairs, and load balancers
   (kernel-level weighted round-robin, not an Octavia amphora) entirely via
