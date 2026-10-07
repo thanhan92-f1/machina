@@ -27,7 +27,7 @@ pub struct MigrationAdvisorReport {
 pub fn advise_vmware_vm(vm_name: &str, os_hint: &str, has_rdm: bool) -> MigrationAdvisorReport {
     let mut safe = vec![
         "Standard libvirt/KVM target supported".into(),
-        "virt-v2v / OVF conversion path available".into(),
+        "h2kvm offline path: GuestKit repair → qcow2 → libvirt (--emit-domain-xml)".into(),
     ];
     let mut risks = Vec::new();
     let mut remediation = Vec::new();
@@ -39,7 +39,7 @@ pub fn advise_vmware_vm(vm_name: &str, os_hint: &str, has_rdm: bool) -> Migratio
         score -= 25;
     }
     if os_hint.to_lowercase().contains("windows") {
-        safe.push("Windows — use virtio-win drivers and UEFI template".into());
+        safe.push("Windows — h2kvm injects VirtIO drivers offline; use UEFI template".into());
     } else {
         safe.push("Linux — virtio-scsi recommended".into());
     }
@@ -49,6 +49,10 @@ pub fn advise_vmware_vm(vm_name: &str, os_hint: &str, has_rdm: bool) -> Migratio
     }
 
     risks.push("Verify static IP and VMware Tools removal post-migrate".into());
+    let vm = if vm_name.is_empty() { "<vm>" } else { vm_name };
+    remediation.push(format!(
+        "Convert with h2kvm: h2kvmctl --cmd vsphere --vs-vm {vm} --to-output {vm}.qcow2 --flatten --emit-domain-xml"
+    ));
     remediation.push("Run preflight migrate check after import".into());
 
     MigrationAdvisorReport {
@@ -129,4 +133,28 @@ pub fn merge_firewall_migration(
         report.safe.push(format!("Firewall dependency: {dep}"));
     }
     report
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn vmware_advice_points_at_h2kvm_not_v2v() {
+        let r = advise_vmware_vm("web-01", "windows", false);
+        let text = format!("{:?} {:?}", r.safe, r.remediation);
+        assert!(!text.to_lowercase().contains("v2v"));
+        assert!(r
+            .remediation
+            .iter()
+            .any(|s| s.contains("h2kvmctl --cmd vsphere --vs-vm web-01 --to-output web-01.qcow2")));
+        assert!(r.safe.iter().any(|s| s.contains("VirtIO drivers offline")));
+
+        let unknown = advise_vmware_vm("", "linux", true);
+        assert!(unknown
+            .remediation
+            .iter()
+            .any(|s| s.contains("--vs-vm <vm>")));
+        assert_eq!(unknown.readiness_percent, 50);
+    }
 }
