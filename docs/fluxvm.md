@@ -158,7 +158,9 @@ removes `results/` mid-run.
 - Backups need FluxVM's default storage or a shared disk file (not LVM thin, NBD or Ceph RBD). Only QEMU with
   default storage can back up a running VM.
 - Hot-add is per engine (table above); extra NICs are QEMU-only.
-- Migration needs QEMU on a shared disk, no extra NICs, and no hot-add or NIC removal since the last start.
+- Migration needs QEMU on a shared disk, no extra NICs, no install media in a CD-ROM, and no hot-add or NIC removal
+  since the last start. Machina can't attach or eject ISOs on FluxVM VMs; VMs created with `cdroms` elsewhere
+  (`fluxctl`, Kairon) need FluxVM's eject route before Machina can migrate them.
 
 ## Troubleshooting
 
@@ -167,6 +169,7 @@ removes `results/` mid-run.
 | `fluxvm/status` says unreachable | `systemctl status fluxvm`, `base_url`, token |
 | No FluxVM VMs in the platform inventory | `MACHINA_FLUXVM_URL` on the agent, then `systemctl restart machina-agent` |
 | Migration pre-check fails `mobility` | Engine isn't QEMU, disk isn't shared, the VM has extra NICs, or it was hot-added or had its last NIC removed since it started (restart it) |
+| Migration fails with `eject cdrom "<name>" first` | The VM was created outside Machina with install media. Eject it on the host: `curl -X POST http://127.0.0.1:7788/v1/vms/<id>/cdroms/<name>/eject` (admin token if FluxVM requires one; live, the empty drive stays) |
 | Create fails with `fluxvm-api POST /v1/vms unreachable` after ~5 min | Disk provisioning outran the daemon's 300 s request timeout (FluxVM then reaps the VM stuck in `Creating`). Check host disk load (`/proc/pressure/io`) |
 | Create or start fails on a VM-edge attach error after a FluxVM upgrade | FluxVM now requires its eBPF edge by default; install the BPF objects or set `[sandbox.dataplane] mode = "legacy"` (see [Upgrading FluxVM](#upgrading-fluxvm)) |
 | NIC removal fails with `guest did not release nicN` | The guest isn't booted far enough to handle PCIe unplug; retry once it's up |

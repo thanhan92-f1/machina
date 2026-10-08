@@ -2,6 +2,22 @@
 
 Rolling notes from deployed-host sweeps. Update as new loops complete.
 
+## 2026-10-08 — FluxVM CD-ROM eject (`212.8.248.187`, FluxVM `14b8d0b`)
+
+QEMU VM on a shared disk with a cloud-init ISO in cdrom `install`, created through fluxvm-api (Machina has no ISO
+field for FluxVM); migrations driven through Machina's `POST /api/v1/vms/{name}/migrate` (`dest_uri: local`).
+
+| Check | Result |
+|-------|--------|
+| Migrate with media → 400 naming the eject route | PASS |
+| Live eject: record `path: ""`, same QEMU pid, QMP `query-block` shows the drive empty, tray closed | PASS |
+| Second eject 200; unknown name 400 | PASS |
+| Migrate after eject; receiver keeps the empty `install` drive | PASS |
+| Stop + start: bare `ide-cd`, no ISO | PASS |
+| **Total** | **11/11** |
+
+`cargo test -p fluxvm-scheduler -p fluxvm-qemu -p fluxvm-core` green.
+
 ## 2026-10-08 — FluxVM primary eBPF dataplane (`212.8.248.187`, FluxVM `8234a0d`)
 
 FluxVM upgraded to `main` with native eBPF as the default VM edge (FluxVM #144, #145, #148); BPF objects rebuilt

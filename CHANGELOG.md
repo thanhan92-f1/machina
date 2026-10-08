@@ -31,6 +31,9 @@ See [docs/fluxvm.md](docs/fluxvm.md).
   `/etc/fluxvm.toml` has no `[sandbox.dataplane]` mode, creating or starting a networked FluxVM VM from Machina fails
   if the BPF objects can't attach (it used to fall back to nftables). Install the BPF objects first, or set
   `mode = "legacy"`. See [docs/fluxvm.md](docs/fluxvm.md#upgrading-fluxvm).
+- **FluxVM CD-ROM eject.** FluxVM VMs created elsewhere with install media now migrate from Machina once the ISO is
+  ejected on the host (FluxVM `POST /v1/vms/{id}/cdroms/{name}/eject`); the refusal names that route. Verified
+  live on 212.8.248.187.
 
 ## 2026-10-07 — FluxVM: full VM management and fleet HA
 
