@@ -103,7 +103,7 @@ Examples:
   deploy-remote.sh sus@host --remote-check    # fast compile smoke after rsync
   deploy-remote.sh sus@host --remote-build   # full release build on server, then exit
   # Full install passes --no-tests to install.sh (no post-install curl suite on the server).
-  (Order is always USER then HOST — not HOST USER.)
+  (USER then HOST is canonical; HOST USER is swapped when HOST is an IPv4 address.)
   SYNC_ONLY=1 deploy-remote.sh sus@host
   deploy-remote.sh check    deploy-remote.sh check sus@host
 

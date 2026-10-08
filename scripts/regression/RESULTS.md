@@ -2,6 +2,19 @@
 
 Rolling notes from deployed-host sweeps. Update as new loops complete.
 
+## 2026-10-08 — FluxVM on a second host (`175.110.122.71`, `ops-fluxvm.js`)
+
+Fresh `./scripts/deploy-remote.sh sus@175.110.122.71 --platform`, FluxVM upgraded from 0.3.0 to `main` (its
+three Kairon VMs kept running through the restart), `[fluxvm]` + `MACHINA_FLUXVM_URL` added, test image and
+kernels copied from `212.8.248.187`.
+
+| Gate | Result |
+|------|--------|
+| fluxvm (`ops-fluxvm.js`) | **35/35 PASS** |
+
+Run from a copy (`~/mn-regression`): another session's `rsync --delete` into `~/.deployment/machina` removed
+`results/` and crashed the first attempt.
+
 ## 2026-10-08 — FluxVM limits lifted (`212.8.248.187`, `make regression-fluxvm`)
 
 FluxVM with fd-passed netns NICs and backups on every engine; same host and agent setup.

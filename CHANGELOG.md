@@ -26,7 +26,7 @@ See [docs/fluxvm.md](docs/fluxvm.md).
   on FluxVM's default storage or a shared disk. Backing up a running VM still needs QEMU with default storage; the UI
   disables **Back up now** for running VMs on the other engines. A restore keeps the disk's format (raw stays raw).
 - **Regression.** `ops-fluxvm.js` adds a namespace NIC hot-add + restart + removal and a Firecracker backup/restore
-  (live backup refused, stopped backup, restore, boot).
+  (live backup refused, stopped backup, restore, boot). 35/35 on two hosts (212.8.248.187 and 175.110.122.71).
 
 ## 2026-10-07 — FluxVM: full VM management and fleet HA
 

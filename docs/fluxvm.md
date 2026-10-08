@@ -36,6 +36,11 @@ For the controller to see and manage a host's FluxVM VMs, `machina-agent` on tha
 
 Restart `machina-agent` after changing them. With no fluxvm-api the agent simply reports no FluxVM VMs.
 
+### Upgrading FluxVM
+
+`fluxvm.service` uses `KillMode=process`, so `systemctl restart fluxvm` after installing a new `fluxctl` leaves running
+VMs alone; the new daemon picks them up from its state dir. Building FluxVM needs a sibling `guestkit` checkout.
+
 ## Create
 
 `POST /api/v1/vms` with `backend: "fluxvm"` (UI: Create VM → FluxVM):
@@ -126,10 +131,15 @@ row, pre-check, `vm.migrate` and HA re-create. Overrides: `FLUXVM_IMAGE`, `FLUXV
 `FLUXVM_QEMU_INITRD`, `FLUXVM_FC_KERNEL`, `FLUXVM_BRIDGE` (`virbr0`), `FLUXVM_SHARED_DIR`
 (`/var/lib/fluxvm/shared`), `FLUXVM_SKIP_PLATFORM=1`. Results: [regression RESULTS](../scripts/regression/RESULTS.md).
 
+The host needs the image and kernels under `/var/lib/fluxvm` (`images/linux-agent.raw`, `kernels/bionic-vmlinuz-4.15`,
+`kernels/bionic-initrd-4.15`, `kernels/vmlinux` for Firecracker) and the bridge. On a host where other sessions sync into
+the same deploy tree, run from a copy of `scripts/regression` (or set `MACHINA_REGRESSION_OUT`): a `rsync --delete`
+removes `results/` mid-run.
+
 ## Limits
 
-- Migration and HA re-create were verified host-to-itself on one host; moving between two hosts uses the same code
-  path but has not been run on a two-host lab yet.
+- Migration and HA re-create were verified host-to-itself, on two separate hosts; moving between two hosts uses the
+  same code path but has not been run yet (it needs both hosts under one controller and a disk both can reach).
 - Backups need FluxVM's default storage or a shared disk file (not LVM thin, NBD or Ceph RBD). Only QEMU with
   default storage can back up a running VM.
 - Hot-add is per engine (table above); extra NICs are QEMU-only.
@@ -141,6 +151,8 @@ row, pre-check, `vm.migrate` and HA re-create. Overrides: `FLUXVM_IMAGE`, `FLUXV
 | --- | --- |
 | `fluxvm/status` says unreachable | `systemctl status fluxvm`, `base_url`, token |
 | No FluxVM VMs in the platform inventory | `MACHINA_FLUXVM_URL` on the agent, then `systemctl restart machina-agent` |
-| Migration pre-check fails `mobility` | Engine isn't QEMU, disk isn't shared, or the VM was hot-added (restart it) |
+| Migration pre-check fails `mobility` | Engine isn't QEMU, disk isn't shared, the VM has extra NICs, or it was hot-added or had its last NIC removed since it started (restart it) |
+| Create fails with `fluxvm-api POST /v1/vms unreachable` after ~5 min | Disk provisioning outran the daemon's 300 s request timeout (FluxVM then reaps the VM stuck in `Creating`). Check host disk load (`/proc/pressure/io`) |
+| NIC removal fails with `guest did not release nicN` | The guest isn't booted far enough to handle PCIe unplug; retry once it's up |
 | HA re-create fails on the disk lock | Another instance still runs on the disk; stop it, or check fencing |
 | Serial shows nothing on a non-QEMU VM | It's the read-only log; use the Agent console for input |

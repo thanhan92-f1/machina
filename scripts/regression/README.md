@@ -126,7 +126,8 @@ make regression-pages MACHINA_BASE_URL=https://HOST:5092
 
 ## Outputs
 
-Written under `scripts/regression/results/` (gitignored):
+Written under `scripts/regression/results/` (gitignored; `MACHINA_REGRESSION_OUT` moves it — use that, or run from a
+copy, on a host where something else `rsync --delete`s the tree):
 
 - `page-sweep.jsonl` / `page-sweep.log`
 - `api-sweep.jsonl` / `api-sweep.log`
