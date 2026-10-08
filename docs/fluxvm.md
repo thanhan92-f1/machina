@@ -41,6 +41,21 @@ Restart `machina-agent` after changing them. With no fluxvm-api the agent simply
 `fluxvm.service` uses `KillMode=process`, so `systemctl restart fluxvm` after installing a new `fluxctl` leaves running
 VMs alone; the new daemon picks them up from its state dir. Building FluxVM needs a sibling `guestkit` checkout.
 
+FluxVM 0.4.0 makes its native eBPF VM edge the default: with no `[sandbox.dataplane]` mode in `/etc/fluxvm.toml` it runs
+`mode = "ebpf"`, `required = true`, so a VM whose tap can't get the BPF program fails to create or start instead of
+falling back to nftables. Before upgrading such a host, run `./scripts/network-fabric-preflight.sh --require-bpf` and
+install the BPF objects (`sudo ./scripts/enable-network-fabric-ga.sh --dry-run` shows what it would change; its GA
+profile also turns on deny-by-default), or keep the old behaviour with:
+
+```toml
+[sandbox.dataplane]
+mode = "legacy"
+```
+
+Hosts that already set a mode (`cilium`, `legacy`, `ebpf` with `required = false`) behave as before. User-mode NAT and
+`none` networking have no VM edge and are unaffected. FluxVM's
+[primary eBPF guide](https://github.com/zyvorai/zyvor-fluxvm/blob/main/docs/primary-ebpf.md) has the details.
+
 ## Create
 
 `POST /api/v1/vms` with `backend: "fluxvm"` (UI: Create VM → FluxVM):
@@ -153,6 +168,7 @@ removes `results/` mid-run.
 | No FluxVM VMs in the platform inventory | `MACHINA_FLUXVM_URL` on the agent, then `systemctl restart machina-agent` |
 | Migration pre-check fails `mobility` | Engine isn't QEMU, disk isn't shared, the VM has extra NICs, or it was hot-added or had its last NIC removed since it started (restart it) |
 | Create fails with `fluxvm-api POST /v1/vms unreachable` after ~5 min | Disk provisioning outran the daemon's 300 s request timeout (FluxVM then reaps the VM stuck in `Creating`). Check host disk load (`/proc/pressure/io`) |
+| Create or start fails on a VM-edge attach error after a FluxVM upgrade | FluxVM now requires its eBPF edge by default; install the BPF objects or set `[sandbox.dataplane] mode = "legacy"` (see [Upgrading FluxVM](#upgrading-fluxvm)) |
 | NIC removal fails with `guest did not release nicN` | The guest isn't booted far enough to handle PCIe unplug; retry once it's up |
 | HA re-create fails on the disk lock | Another instance still runs on the disk; stop it, or check fencing |
 | Serial shows nothing on a non-QEMU VM | It's the read-only log; use the Agent console for input |

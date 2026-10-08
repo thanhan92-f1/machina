@@ -27,6 +27,10 @@ See [docs/fluxvm.md](docs/fluxvm.md).
   disables **Back up now** for running VMs on the other engines. A restore keeps the disk's format (raw stays raw).
 - **Regression.** `ops-fluxvm.js` adds a namespace NIC hot-add + restart + removal and a Firecracker backup/restore
   (live backup refused, stopped backup, restore, boot). 35/35 on two hosts (212.8.248.187 and 175.110.122.71).
+- **FluxVM upgrade note.** FluxVM `main` now defaults to its native eBPF VM edge with `required = true`: on a host whose
+  `/etc/fluxvm.toml` has no `[sandbox.dataplane]` mode, creating or starting a networked FluxVM VM from Machina fails
+  if the BPF objects can't attach (it used to fall back to nftables). Install the BPF objects first, or set
+  `mode = "legacy"`. See [docs/fluxvm.md](docs/fluxvm.md#upgrading-fluxvm).
 
 ## 2026-10-07 — FluxVM: full VM management and fleet HA
 
