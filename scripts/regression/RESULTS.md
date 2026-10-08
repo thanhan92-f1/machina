@@ -13,8 +13,9 @@ Machina built with `fluxvm_isos`, the CD-ROM eject route for FluxVM and the HA r
 | `cargo test -p machina-core -p machina-controller fluxvm` | PASS |
 | web `npm test` | 71 files / 348 tests PASS |
 
-`212.8.248.187` couldn't run it: I/O pressure stayed at 93–95% for over an hour (other sessions' builds, k3s,
-Postgres), and every FluxVM create outran the 300 s request timeout.
+`212.8.248.187` couldn't run it at first: I/O pressure stayed at 93–95% for over an hour (other sessions' builds,
+k3s, Postgres), and every FluxVM create outran the 300 s request timeout. Rerun there once pressure fell to ~35%:
+**38/38 PASS** in under 5 minutes, same steps.
 
 ## 2026-10-08 — FluxVM CD-ROM eject (`212.8.248.187`, FluxVM `14b8d0b`)
 
