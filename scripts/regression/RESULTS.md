@@ -2,6 +2,19 @@
 
 Rolling notes from deployed-host sweeps. Update as new loops complete.
 
+## 2026-10-08 — FluxVM primary eBPF dataplane (`212.8.248.187`, FluxVM `8234a0d`)
+
+FluxVM upgraded to `main` with native eBPF as the default VM edge (FluxVM #144, #145, #148); BPF objects rebuilt
+and installed.
+
+| Gate | Result |
+|------|--------|
+| FluxVM BPF host C tests (`test-ebpf-performance-host.sh`, also `SANITIZE=1`) | **PASS** (125952 policy, 20000 bitmap, 672 telemetry cases) |
+| `cargo test -p fluxvm-core -p fluxvm-network -p fluxvm-hypervisor` | **PASS** (one flaky `https_intercept` h2 handshake, passed 3/3 on rerun) |
+| FluxVM `test-network-fabric.sh` | **20/20** after fixing its stale `schema_version == 4` assertion (now 12) |
+| Default-dataplane live check (no table → ebpf/required/TCX attached; missing object → create refused, no nftables; `legacy`; lab `required = false`; `network: none`) | **7/7 PASS** |
+| fluxvm (`ops-fluxvm.js`) | **35/35 PASS** |
+
 ## 2026-10-08 — FluxVM on a second host (`175.110.122.71`, `ops-fluxvm.js`)
 
 Fresh `./scripts/deploy-remote.sh sus@175.110.122.71 --platform`, FluxVM upgraded from 0.3.0 to `main` (its
